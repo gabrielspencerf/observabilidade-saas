@@ -1,0 +1,39 @@
+# Dependencies (serão instalados no build)
+node_modules
+.pnp
+.pnp.js
+
+# Build local (será refeito no container)
+.next
+out
+build
+
+# Env e segredos (nunca no image)
+.env
+.env*
+!.env.example
+
+# Git
+.git
+.gitignore
+
+# Docs e dev (opcional: reduzir contexto)
+docs
+*.md
+!README.md
+
+# Debug / testes
+coverage
+.nyc_output
+*.log
+pgdata
+
+# IDE / OS
+.DS_Store
+*.tsbuildinfo
+next-env.d.ts
+.vercel
+
+# Design / referência (não necessários em runtime)
+*.html
+!**/public/**/*.html

@@ -1,0 +1,218 @@
+<!DOCTYPE html>
+<html lang="pt-BR" class="h-full antialiased">
+<head>
+  <meta charset="utf-8"/>
+  <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
+  <title>Design System – Manual de uso (referências visuais)</title>
+  <link rel="preconnect" href="https://fonts.googleapis.com"/>
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin/>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Plus+Jakarta+Sans:wght@300;400;500;600;700&display=swap" rel="stylesheet"/>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      theme: {
+        extend: {
+          colors: {
+            primary: { 500: 'hsl(25, 95%, 53%)', 600: 'hsl(15, 95%, 50%)', 700: 'hsl(35, 95%, 60%)' },
+            secondary: { 800: 'hsl(45, 90%, 80%)' },
+            darkGray: { 50: 'hsl(25, 20%, 10%)', 100: 'hsl(25, 15%, 15%)' }
+          },
+          fontFamily: { jakarta: ['"Plus Jakarta Sans"', 'sans-serif'], inter: ['Inter', 'sans-serif'] }
+        }
+      }
+    };
+  </script>
+  <style>
+    :root { font-family: 'Inter', system-ui, sans-serif; }
+    .sidebar-demo { width: 320px; }
+    .scroll-hide::-webkit-scrollbar { display: none; }
+    .scroll-hide { -ms-overflow-style: none; scrollbar-width: none; }
+    .beautiful-shadow {
+      box-shadow: 0px 0px 0px 1px rgba(0,0,0,0.06), 0px 1px 1px -0.5px rgba(0,0,0,0.06), 0px 3px 3px -1.5px rgba(0,0,0,0.06), 0px 6px 6px -3px rgba(0,0,0,0.06), 0px 12px 12px -6px rgba(0,0,0,0.06), 0px 24px 24px -12px rgba(0,0,0,0.06);
+    }
+    .glass-effect {
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+    .gradient-text {
+      background-clip: text;
+      -webkit-background-clip: text;
+      color: transparent;
+    }
+    .card-divider {
+      height: 1px;
+      background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.3) 80%, transparent);
+    }
+    .card-vertical-divider {
+      width: 1px;
+      background-image: linear-gradient(180deg, transparent, rgba(255,255,255,0.3) 20%, rgba(255,255,255,0.5) 50%, rgba(255,255,255,0.3) 80%, transparent);
+    }
+    .stat-value { font-size: 1.4rem; font-weight: 600; line-height: 1.1; }
+    .stat-label { font-size: 0.7rem; opacity: 0.8; text-transform: uppercase; letter-spacing: 0.05em; }
+    .glow { box-shadow: 0 0 15px rgba(255, 149, 0, 0.6); }
+    .icon-circle {
+      height: 2rem; width: 2rem; border-radius: 50%;
+      display: flex; align-items: center; justify-content: center;
+      background: rgba(255,255,255,0.1); border: 1px solid rgba(255,255,255,0.2);
+    }
+  </style>
+</head>
+<body class="min-h-full bg-neutral-100 text-neutral-900">
+  <!-- Top nav (anchor links) -->
+  <nav class="sticky top-0 z-50 bg-white/90 backdrop-blur border-b border-neutral-200 px-6 py-3 flex flex-wrap items-center gap-4 text-sm">
+    <span class="font-semibold text-neutral-800">Design System – Referências</span>
+    <a href="#typography" class="text-neutral-600 hover:text-neutral-900">Tipografia</a>
+    <a href="#colors" class="text-neutral-600 hover:text-neutral-900">Cores e superfícies</a>
+    <a href="#components" class="text-neutral-600 hover:text-neutral-900">Componentes</a>
+    <a href="#layout" class="text-neutral-600 hover:text-neutral-900">Layout e espaçamento</a>
+    <a href="#motion" class="text-neutral-600 hover:text-neutral-900">Motion</a>
+    <a href="#icons" class="text-neutral-600 hover:text-neutral-900">Ícones</a>
+  </nav>
+
+  <main class="max-w-6xl mx-auto px-6 py-10 space-y-16">
+    <!-- Hero (clone adaptado do padrão) -->
+    <section class="rounded-3xl bg-white shadow px-10 py-10">
+      <h1 class="text-2xl font-semibold text-neutral-900 mb-2">Manual de uso – Referências visuais</h1>
+      <p class="text-sm text-neutral-600 max-w-md mb-6">Esta página reúne padrões extraídos das referências Sidebar, Dashboard-list e Glass-effect. Use as mesmas classes e estruturas na aplicação para manter consistência.</p>
+      <div class="flex gap-4">
+        <a href="#components" class="flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-900 text-zinc-100 rounded-xl py-3 px-4 font-medium hover:from-zinc-900 hover:to-zinc-800 transition-all beautiful-shadow">Ver componentes</a>
+        <a href="../README.md" class="flex items-center gap-2 text-sm text-neutral-600 hover:text-neutral-900">Documentação Design System →</a>
+      </div>
+    </section>
+
+    <!-- 1) Typography -->
+    <section id="typography" class="scroll-mt-20">
+      <h2 class="text-2xl font-semibold text-neutral-900 mb-6">Tipografia</h2>
+      <div class="bg-white rounded-2xl shadow p-8 space-y-6">
+        <div class="border-b border-neutral-100 pb-4">
+          <p class="text-xs text-neutral-500 uppercase tracking-wider mb-1">Inter – Dashboard-list</p>
+          <p class="text-2xl font-semibold text-neutral-900 mb-2">Heading 2 (text-2xl font-semibold)</p>
+          <p class="text-sm text-neutral-600">Parágrafo secundário (text-sm text-neutral-600).</p>
+          <p class="text-xs uppercase tracking-wide text-neutral-500 mt-2">Label uppercase (text-xs uppercase tracking-wide)</p>
+        </div>
+        <div class="border-b border-neutral-100 pb-4">
+          <p class="text-xs text-neutral-500 uppercase tracking-wider mb-1">Plus Jakarta Sans – Glass-effect</p>
+          <p class="text-[24px] font-light leading-tight tracking-tight font-jakarta">Título leve (font-light font-jakarta)</p>
+          <p class="text-[24px] font-semibold text-right font-jakarta">Marca / destaque</p>
+        </div>
+        <div>
+          <p class="text-xs text-neutral-500 uppercase tracking-wider mb-1">Sidebar (Zinc)</p>
+          <p class="text-sm font-medium text-zinc-100">Item ativo (escuro)</p>
+          <p class="text-sm text-zinc-300">Item inativo (escuro)</p>
+          <p class="text-xs text-zinc-500">Label / contagem</p>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2) Colors & Surfaces -->
+    <section id="colors" class="scroll-mt-20">
+      <h2 class="text-2xl font-semibold text-neutral-900 mb-6">Cores e superfícies</h2>
+      <div class="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <div class="bg-zinc-900 rounded-xl p-4 text-zinc-100 text-sm">Sidebar escuro (bg-zinc-900)</div>
+        <div class="bg-zinc-100 border border-zinc-200 rounded-xl p-4 text-zinc-800 text-sm">Sidebar claro</div>
+        <div class="bg-white rounded-3xl shadow p-4 text-neutral-900 text-sm">Card dashboard (rounded-3xl shadow)</div>
+        <div class="bg-[#E8F4F8] rounded-xl p-4 text-neutral-700 text-sm">Fundo página (dashboard)</div>
+      </div>
+      <div class="mt-4 flex flex-wrap gap-2">
+        <span class="px-2 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-full">Badge escasso</span>
+        <span class="px-2 py-1 bg-emerald-100 text-emerald-700 text-xs font-medium rounded-full">Disponível</span>
+        <span class="px-2 py-1 bg-zinc-600 text-zinc-200 text-xs rounded-full font-medium">Contagem ativa</span>
+      </div>
+      <div class="mt-6 p-6 rounded-2xl bg-gradient-to-r from-white/20 to-white/5 border border-white/50 glass-effect text-white font-jakarta">
+        <p class="font-semibold">Superfície glass (glass-effect)</p>
+        <p class="text-sm opacity-80">backdrop-filter: blur(12px) + from-white/20 to-white/5</p>
+      </div>
+      <div class="mt-4 p-4 rounded-xl bg-gradient-to-br from-primary-700 via-primary-500 to-primary-600 text-white text-sm glow">Card base laranja (primary + glow)</div>
+    </section>
+
+    <!-- 3) UI Components -->
+    <section id="components" class="scroll-mt-20">
+      <h2 class="text-2xl font-semibold text-neutral-900 mb-6">Componentes UI</h2>
+      <div class="space-y-8">
+        <div>
+          <p class="text-sm font-medium text-neutral-600 mb-2">Botão primário (sidebar)</p>
+          <button type="button" class="flex items-center justify-center gap-2 bg-gradient-to-r from-zinc-800 to-zinc-900 text-zinc-100 rounded-xl py-3 px-4 font-medium hover:from-zinc-900 hover:to-zinc-800 transition-all beautiful-shadow">Compose / Ação principal</button>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-neutral-600 mb-2">CTA dashboard</p>
+          <button type="button" class="flex items-center gap-2 px-4 py-2 bg-gradient-to-r from-cyan-600 to-teal-600 text-white rounded-full text-sm font-medium hover:from-cyan-700 hover:to-teal-700 transition-all">Request custom session</button>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-neutral-600 mb-2">Item de navegação (ativo vs inativo)</p>
+          <div class="sidebar-demo rounded-2xl overflow-hidden beautiful-shadow bg-zinc-900 p-2 space-y-1">
+            <a href="#" class="flex items-center gap-3 px-4 py-3 bg-gradient-to-r from-zinc-700 to-zinc-800 text-zinc-100 rounded-xl beautiful-shadow">Inbox <span class="ml-auto bg-zinc-600 text-zinc-200 text-xs px-2 py-1 rounded-full font-medium">24</span></a>
+            <a href="#" class="flex items-center gap-3 px-4 py-3 text-zinc-300 hover:bg-zinc-800 hover:text-zinc-100 rounded-xl transition-colors">Starred <span class="ml-auto text-xs text-zinc-500">8</span></a>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-neutral-600 mb-2">Linha de listagem (dashboard)</p>
+          <div class="flex items-center justify-between rounded-2xl bg-gradient-to-r from-violet-50 to-purple-50 border border-violet-100 px-6 py-4 hover:shadow-md transition-shadow">
+            <div class="flex items-center gap-4 w-[220px]">
+              <div class="w-12 h-12 rounded-full bg-violet-200 border-2 border-white shadow-sm"></div>
+              <div>
+                <p class="font-semibold text-sm">Nome do item</p>
+                <p class="text-xs text-neutral-600">Subtítulo</p>
+              </div>
+            </div>
+            <span class="px-2 py-1 bg-rose-100 text-rose-700 text-xs font-medium rounded-full">2 left</span>
+          </div>
+        </div>
+        <div>
+          <p class="text-sm font-medium text-neutral-600 mb-2">Glass card (stats + tags)</p>
+          <div class="glass-effect bg-gradient-to-r from-white/20 to-white/5 rounded-2xl border border-white/30 overflow-hidden p-5 text-white max-w-md">
+            <div class="card-divider w-full my-3"></div>
+            <div class="flex justify-between mb-2">
+              <div class="text-center"><div class="stat-value gradient-text bg-gradient-to-r from-white/90 to-white/70">97%</div><div class="stat-label">Efficiency</div></div>
+              <div class="card-vertical-divider h-10 my-auto"></div>
+              <div class="text-center"><div class="stat-value gradient-text bg-gradient-to-r from-white/90 to-white/70">156+</div><div class="stat-label">Patents</div></div>
+            </div>
+            <div class="flex flex-wrap gap-2 mt-2">
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/20">TAG</span>
+              <span class="text-[10px] px-2 py-0.5 rounded-full bg-white/10 border border-white/20">AI</span>
+            </div>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 4) Layout & Spacing -->
+    <section id="layout" class="scroll-mt-20">
+      <h2 class="text-2xl font-semibold text-neutral-900 mb-6">Layout e espaçamento</h2>
+      <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+        <p class="text-sm text-neutral-600">Sidebar: <code class="bg-neutral-100 px-1 rounded">width: 320px</code> (768px: 280px; 640px: 100% max-width 300px).</p>
+        <p class="text-sm text-neutral-600">Dashboard: <code class="bg-neutral-100 px-1 rounded">max-w-[1200px] space-y-10</code>; card seção <code class="bg-neutral-100 px-1 rounded">px-10 pt-10 pb-6</code>.</p>
+        <p class="text-sm text-neutral-600">Lista: header <code class="bg-neutral-100 px-1 rounded">rounded-full bg-neutral-50 px-6 py-2</code>; linhas <code class="bg-neutral-100 px-1 rounded">space-y-3</code>, colunas com w-[220px], w-[160px], etc.</p>
+        <p class="text-sm text-neutral-600">Glass card: dimensões custom (31.65em × 18em) ou adaptar com rounded-2xl e p-5.</p>
+      </div>
+    </section>
+
+    <!-- 5) Motion & Interaction -->
+    <section id="motion" class="scroll-mt-20">
+      <h2 class="text-2xl font-semibold text-neutral-900 mb-6">Motion e interação</h2>
+      <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+        <p class="text-sm text-neutral-600">Transições usadas nas referências:</p>
+        <ul class="list-disc list-inside text-sm text-neutral-600 space-y-1">
+          <li><code>transition-colors</code> — itens de nav, links</li>
+          <li><code>transition-all</code> — botão Compose, hover de botões</li>
+          <li><code>hover:shadow-md</code> — linhas da listagem, botão conta (claro)</li>
+          <li><code>hover:bg-zinc-800</code> / <code>hover:bg-zinc-200</code> — itens sidebar</li>
+        </ul>
+        <div class="flex gap-4 pt-4">
+          <button type="button" class="px-4 py-2 rounded-xl bg-zinc-200 text-zinc-800 font-medium hover:bg-zinc-300 transition-colors">transition-colors</button>
+          <button type="button" class="px-4 py-2 rounded-xl bg-neutral-800 text-white font-medium hover:shadow-md transition-all">transition-all + shadow</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6) Icons -->
+    <section id="icons" class="scroll-mt-20">
+      <h2 class="text-2xl font-semibold text-neutral-900 mb-6">Ícones</h2>
+      <div class="bg-white rounded-2xl shadow p-6 space-y-4">
+        <p class="text-sm text-neutral-600"><strong>Sidebar e Dashboard-list:</strong> Lucide Icons. SVG com <code class="bg-neutral-100 px-1 rounded">class="lucide lucide-&lt;name&gt;"</code>, <code class="bg-neutral-100 px-1 rounded">data-lucide="&lt;name&gt;"</code>. Tamanhos: <code>w-4 h-4</code> (botões), <code>w-5 h-5</code> (nav), <code>w-3 h-3</code> (meta).</p>
+        <p class="text-sm text-neutral-600"><strong>Glass-effect:</strong> Font Awesome (<code class="bg-neutral-100 px-1 rounded">fas fa-*</code>). Círculos com <code class="bg-neutral-100 px-1 rounded">.icon-circle</code> (2rem, bg rgba(255,255,255,0.1), border white/20).</p>
+        <p class="text-xs text-neutral-500">Manter uma única biblioteca por contexto ou documentar exceções em foundations.md.</p>
+      </div>
+    </section>
+  </main>
+</body>
+</html>

@@ -1,0 +1,122 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+/* ========== Design System CL (cl-1design-system.html) ========== */
+/* Variáveis: dark = fundo, surface = painéis, border, neon = destaque, text, muted */
+
+:root {
+  --color-brand-dark: 2 4 3; /* Fundo mais escuro (quase preto puro com leve tom verde) */
+  --color-brand-surface: 8 10 9; /* Superfícies um pouco acima do fundo */
+  --color-brand-border: 20 25 22; /* Bordas bem sutis para não destacar muito */
+  --color-brand-neon: 0 200 130; /* Verde esmeralda mantido */
+  --color-brand-text: 240 245 242;
+  --color-brand-muted: 110 120 115; /* Texto secundário mais escurecido também */
+}
+
+html.light {
+  --color-brand-dark: 245 248 246; /* Fundo mais claro e consistente (branco gelo/verde) */
+  --color-brand-surface: 255 255 255;
+  --color-brand-border: 215 225 220; /* Borda mais visível para o claro */
+  --color-brand-neon: 0 160 100; /* Verde esmeralda escurecido no modo light */
+  --color-brand-text: 15 20 18; /* Texto primário quase preto */
+  --color-brand-muted: 90 105 95; /* Texto secundário bem contrastante */
+}
+
+@layer base {
+  body {
+    background-color: rgb(var(--color-brand-dark));
+    color: rgb(var(--color-brand-text));
+    min-height: 100vh;
+    transition: background-color 0.3s ease, color 0.3s ease;
+    font-family: "Inter", system-ui, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+  }
+  ::selection {
+    background: rgb(var(--color-brand-neon) / 0.3);
+    color: rgb(var(--color-brand-text));
+  }
+}
+
+/* Logo: escuro em fundo claro, claro em fundo escuro */
+.logo-adaptive {
+  filter: brightness(0) invert(1);
+}
+html.light .logo-adaptive {
+  filter: brightness(0); /* Removemos o invert pra ficar logo preto no modo claro */
+}
+
+/* CTA primário: fundo verde sólido estilo institucional */
+.btn-cta-primary {
+  background: rgb(var(--color-brand-neon));
+  color: rgb(0 20 10);
+  border: none;
+  border-radius: 8px; /* Cantos arredondados leves como no institucional */
+  box-shadow: 0 4px 15px -5px rgba(var(--color-brand-neon), 0.5);
+  transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+  font-weight: 600;
+}
+html.light .btn-cta-primary {
+  color: #fff;
+  box-shadow: 0 4px 10px -3px rgba(var(--color-brand-neon), 0.4);
+}
+.btn-cta-primary:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 6px 20px -5px rgba(var(--color-brand-neon), 0.7);
+  filter: brightness(1.1);
+}
+html.light .btn-cta-primary:hover {
+  box-shadow: 0 6px 15px -3px rgba(var(--color-brand-neon), 0.5);
+}
+.btn-cta-primary:active {
+  transform: translateY(0);
+}
+
+/* Sidebar */
+.sidebar {
+  width: 320px;
+}
+@media (max-width: 768px) {
+  .sidebar {
+    width: 280px;
+  }
+}
+@media (max-width: 640px) {
+  .sidebar {
+    width: 100%;
+    max-width: 300px;
+  }
+}
+
+.scroll-hide::-webkit-scrollbar {
+  display: none;
+}
+.scroll-hide {
+  -ms-overflow-style: none;
+  scrollbar-width: none;
+}
+
+.beautiful-shadow {
+  box-shadow: 0 1px 1px -0.5px rgba(0, 0, 0, 0.06),
+    0 3px 3px -1.5px rgba(0, 0, 0, 0.06),
+    0 6px 6px -3px rgba(0, 0, 0, 0.06),
+    0 12px 12px -6px rgba(0, 0, 0, 0.06),
+    0 24px 24px -12px rgba(0, 0, 0, 0.06);
+}
+
+.glass-effect {
+  backdrop-filter: blur(16px);
+  -webkit-backdrop-filter: blur(16px);
+  background: rgba(var(--color-brand-surface), 0.6);
+  border: 1px solid rgba(var(--color-brand-border), 0.5);
+  border-radius: 8px; /* Cantos mais retos */
+}
+.glass-panel {
+  background: rgba(var(--color-brand-surface), 0.7);
+  backdrop-filter: blur(20px) saturate(180%);
+  -webkit-backdrop-filter: blur(20px) saturate(180%);
+  border: 1px solid rgba(var(--color-brand-border), 0.6);
+  box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+  border-radius: 12px; /* Cantos mais retos */
+}

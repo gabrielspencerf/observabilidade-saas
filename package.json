@@ -1,0 +1,54 @@
+{
+  "name": "observabilidade-saas",
+  "version": "0.1.0",
+  "private": true,
+  "scripts": {
+    "dev": "next dev -p 3000",
+    "dev:webpack": "next dev --webpack",
+    "build": "next build",
+    "start": "next start",
+    "lint": "next lint",
+    "worker:dev": "tsx watch src/workers/runner.ts",
+    "worker:readiness": "tsx scripts/worker-readiness.ts",
+    "db:generate": "drizzle-kit generate",
+    "db:migrate": "drizzle-kit migrate",
+    "db:push": "drizzle-kit push",
+    "db:seed": "tsx scripts/db-seed.ts",
+    "db:create": "tsx scripts/create-db.ts",
+    "db:studio": "drizzle-kit studio"
+  },
+  "devDependencies": {
+    "@types/node": "22.19.15",
+    "@types/react": "19.2.14",
+    "@types/react-dom": "^19.0.0",
+    "autoprefixer": "^10.4.20",
+    "eslint": "^9.0.0",
+    "eslint-config-next": "^15.0.0",
+    "postcss": "^8.4.49",
+    "tailwindcss": "^3.4.15",
+    "typescript": "^5.6.0"
+  },
+  "dependencies": {
+    "argon2": "^0.41.1",
+    "bullmq": "^5.34.0",
+    "class-variance-authority": "^0.7.0",
+    "clsx": "^2.1.1",
+    "dotenv": "^16.4.5",
+    "drizzle-orm": "^0.31.0",
+    "ioredis": "^5.4.1",
+    "lucide-react": "^0.460.0",
+    "next": "^15.0.0",
+    "next-themes": "^0.4.6",
+    "postgres": "^3.4.0",
+    "react": "^19.0.0",
+    "react-dom": "^19.0.0",
+    "recharts": "^3.8.0",
+    "tailwind-merge": "^2.5.4",
+    "tailwindcss-animate": "^1.0.7",
+    "tsx": "^4.19.2",
+    "drizzle-kit": "^0.22.0"
+  },
+  "engines": {
+    "node": ">=20"
+  }
+}

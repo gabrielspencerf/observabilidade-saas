@@ -1,0 +1,30 @@
+---
+description: Padrão de desenvolvimento do app — Design System, rotas, componentes e convenções
+alwaysApply: true
+---
+
+# Padrão de desenvolvimento
+
+Sempre seguir o documento canônico **docs/PADRAO_DESENVOLVIMENTO.md** e o Design System em **docs/design-system/**.
+
+## Regras obrigatórias
+
+### Rotas e sessões
+- **Usuário:** rotas em `(dashboard)/dashboard/*`; entrada `/login`; nunca exibir link para Admin no dashboard.
+- **Admin:** rotas em `(admin)/admin/*`; entrada `/admin-login`; apenas super_admin.
+
+### Front e UI
+- **Componentes primitivos:** usar os de `src/components/ui/` (Button, Input, Card, Badge). Importar de `@/components/ui`.
+- **Layout de páginas do dashboard:** usar `PageSection`, `StatsRow`, `ListTableHeader`, `ListRowCard` de `src/components/layout/`. O conteúdo do dashboard já está dentro de `DashboardPageLayout` (fundo e container Aura).
+- **Sidebar:** estrutura e classes conforme `src/components/dashboard-sidebar.tsx` e docs/design-system/visual-references/sidebar.md; ícones Lucide.
+- **Estilos:** Tailwind com tokens do theme (`tailwind.config.ts`) e classes das referências visuais (zinc, neutral, gradientes Aura). Evitar valores arbitrários exceto quando documentado (ex.: fundo `#E8F4F8`).
+- **Novas telas:** consultar docs/design-system/patterns.md; seguir checklists em PADRAO_DESENVOLVIMENTO.md (nova tela, novo componente).
+
+### Código
+- Respostas e comentários de negócio em português; nomes técnicos em inglês quando fizer sentido.
+- Evitar duplicação; arquivos com mais de ~200–300 linhas refatorar.
+- Validação e permissões sempre no servidor.
+
+### Referência rápida
+- Mapeamento código ↔ doc: **docs/design-system/code-and-implementation.md**.
+- Padrões de tela: **docs/design-system/patterns.md**.
