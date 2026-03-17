@@ -28,8 +28,14 @@ export async function GET(request: NextRequest) {
   const list = await listPageSpeedResultsForTenant(tenantId, { limit: 60 });
   const serialized = list.map((r) => ({
     ...r,
-    metricDate: r.metricDate.toISOString().slice(0, 10),
-    fetchedAt: r.fetchedAt.toISOString(),
+    metricDate:
+      typeof r.metricDate === "string"
+        ? r.metricDate.slice(0, 10)
+        : new Date(r.metricDate).toISOString().slice(0, 10),
+    fetchedAt:
+      typeof r.fetchedAt === "string"
+        ? r.fetchedAt
+        : new Date(r.fetchedAt).toISOString(),
   }));
   return NextResponse.json(serialized);
 }
