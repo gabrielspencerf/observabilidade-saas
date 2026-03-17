@@ -20,6 +20,10 @@ RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 ENV NODE_OPTIONS=--max-old-space-size=4096
+# Placeholders para "Collecting page data" (Next.js avalia rotas no build; valores reais no runtime)
+ENV DATABASE_URL=postgresql://build:build@localhost:5432/build
+ENV REDIS_URL=redis://localhost:6379
+ENV SESSION_SECRET=build-time-placeholder
 RUN npm run build
 
 # Runner: app (standalone) + arquivos necessários para o worker
