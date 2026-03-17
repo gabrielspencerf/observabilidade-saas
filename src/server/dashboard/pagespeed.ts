@@ -86,16 +86,17 @@ export async function savePageSpeedResult(
 ): Promise<void> {
   const db = getDb();
   const today = new Date();
-  const metricDate = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const metricDateStr = `${today.getFullYear()}-${String(today.getMonth() + 1).padStart(2, "0")}-${String(today.getDate()).padStart(2, "0")}`;
+  const fetchedAt = new Date();
   await db
     .insert(pagespeedResults)
     .values({
       tenantId,
       url,
       strategy,
-      metricDate,
+      metricDate: metricDateStr,
       result,
-      fetchedAt: new Date(),
+      fetchedAt,
     })
     .onConflictDoUpdate({
       target: [
@@ -106,7 +107,7 @@ export async function savePageSpeedResult(
       ],
       set: {
         result,
-        fetchedAt: new Date(),
+        fetchedAt,
       },
     });
 }
