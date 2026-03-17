@@ -12,10 +12,11 @@ WORKDIR /app
 COPY package.json package-lock.json* ./
 RUN npm ci --omit=dev
 
-# Builder: Next.js standalone
+# Builder: Next.js standalone (precisa de devDependencies para compilar)
 FROM base AS builder
 WORKDIR /app
-COPY --from=deps /app/node_modules ./node_modules
+COPY package.json package-lock.json* ./
+RUN npm ci
 COPY . .
 ENV NEXT_TELEMETRY_DISABLED=1
 RUN npm run build
