@@ -36,7 +36,14 @@ export async function transcribe(
   const filename = `audio.${ext}`;
 
   const form = new FormData();
-  form.append("file", new Blob([audioBuffer], { type: mimeType ?? "audio/ogg" }), filename);
+  // Em ambiente Node, usamos o ArrayBuffer interno do Uint8Array,
+  // que é aceito como BlobPart pelos tipos do DOM.
+  const arrayBuffer = audioBuffer.buffer as ArrayBuffer;
+  form.append(
+    "file",
+    new Blob([arrayBuffer], { type: mimeType ?? "audio/ogg" }),
+    filename
+  );
   form.append("model", "whisper-1");
   form.append("response_format", "text");
 
