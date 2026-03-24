@@ -17,6 +17,9 @@ import {
   resolveStepFromTypebotPayload,
   shouldAdvanceLeadStep,
 } from "@/server/funnel/resolve-step";
+import { notifyTenantUsers } from "@/server/notifications/internal";
+import { ensureFollowupTaskForLead } from "@/server/followup/engine";
+import { enqueueDueFollowupsForTenant } from "@/server/followup/enqueue-due-followups";
 import type { JobProcessTypebotRaw } from "../queue/types";
 
 const SOURCE_PROVIDER = "typebot";
@@ -148,6 +151,7 @@ async function processTypebotRawInner(
   const resolvedStep = await resolveStepFromTypebotPayload(db, tenantId, payload);
 
   let leadId: string;
+  let leadFunnelId: string | null = null;
   const [existingLead] = await db
     .select({
       id: leads.id,
@@ -169,6 +173,7 @@ async function processTypebotRawInner(
 
   if (existingLead) {
     leadId = existingLead.id;
+    leadFunnelId = existingLead.funnelId ?? null;
     const currentFunnelId = existingLead.funnelId ?? null;
     const currentSortOrder =
       existingLead.currentStepSortOrder != null
@@ -196,6 +201,8 @@ async function processTypebotRawInner(
         }),
       })
       .where(eq(leads.id, leadId));
+
+    // Follow-up engine roda em job dedicado para evitar varredura síncrona.
   } else {
     const [insertedLead] = await db
       .insert(leads)
@@ -229,6 +236,7 @@ async function processTypebotRawInner(
       return { error: "Failed to create lead" };
     }
     leadId = insertedLead.id;
+    leadFunnelId = resolvedStep?.funnelId ?? null;
 
     const utm = getUtmFromPayload(payload);
     const hasUtm =
@@ -247,7 +255,24 @@ async function processTypebotRawInner(
         utmContent: utm.utmContent,
       });
     }
+
+    await notifyTenantUsers(tenantId, {
+      type: "lead_created",
+      title: "Novo lead recebido",
+      message: `Novo lead entrou no funil (${name ?? email ?? phone ?? "sem identificação"}).`,
+      resourceType: "lead",
+      resourceId: leadId,
+    });
   }
+
+  await ensureFollowupTaskForLead({
+    tenantId,
+    leadId,
+    funnelId: leadFunnelId,
+    reason: existingLead ? "status_changed" : "lead_created",
+    currentStatus: LEAD_STATUS,
+  });
+  await enqueueDueFollowupsForTenant(tenantId);
 
   const payloadWithRawId = { ...payload, _rawEventId: rawEventId };
   const existingEvents = await db

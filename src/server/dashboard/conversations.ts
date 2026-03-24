@@ -10,6 +10,7 @@ import {
   conversationMessages,
   evolutionInstances,
   uazapiInstances,
+  leads,
 } from "@/db/schema";
 
 export interface ConversationRow {
@@ -20,6 +21,8 @@ export interface ConversationRow {
   lastSyncedAt: Date | null;
   instanceDisplay: string;
   messageCount: number;
+  leadName: string | null;
+  leadPhone: string | null;
 }
 
 export interface ListConversationsOptions {
@@ -48,6 +51,8 @@ export async function listConversationsForTenant(
       evolutionInstanceExternalId: evolutionInstances.externalId,
       uazapiInstanceName: uazapiInstances.instanceName,
       uazapiInstanceExternalId: uazapiInstances.externalId,
+      leadName: leads.name,
+      leadPhone: leads.phone,
     })
     .from(conversations)
     .leftJoin(
@@ -58,6 +63,7 @@ export async function listConversationsForTenant(
       uazapiInstances,
       eq(conversations.uazapiInstanceId, uazapiInstances.id)
     )
+    .leftJoin(leads, eq(conversations.leadId, leads.id))
     .where(eq(conversations.tenantId, tenantId))
     .orderBy(
       desc(conversations.lastSyncedAt),
@@ -100,6 +106,8 @@ export async function listConversationsForTenant(
       lastSyncedAt: r.lastSyncedAt,
       instanceDisplay,
       messageCount: counts[r.id] ?? 0,
+      leadName: r.leadName,
+      leadPhone: r.leadPhone,
     };
   });
 }

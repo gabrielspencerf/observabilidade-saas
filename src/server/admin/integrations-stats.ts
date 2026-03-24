@@ -18,26 +18,36 @@ export type IntegrationStats = {
   googleAdsAccounts: number;
 };
 
-export async function getIntegrationStats(): Promise<IntegrationStats> {
+export async function getIntegrationStats(tenantId?: string): Promise<IntegrationStats> {
   const db = getDb();
-  const [typebot] = await db
-    .select({ value: sql<number>`count(*)::int` })
-    .from(typebotBots);
-  const [evolution] = await db
-    .select({ value: sql<number>`count(*)::int` })
-    .from(evolutionInstances);
-  const [googleAds] = await db
-    .select({ value: sql<number>`count(*)::int` })
-    .from(googleAdsAccounts);
-  const [uazapi] = await db
-    .select({ value: sql<number>`count(*)::int` })
-    .from(uazapiInstances);
+  const [typebotRows, evolutionRows, googleAdsRows, uazapiRows] = await Promise.all([
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(typebotBots)
+      .where(tenantId ? eq(typebotBots.tenantId, tenantId) : undefined),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(evolutionInstances)
+      .where(tenantId ? eq(evolutionInstances.tenantId, tenantId) : undefined),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(googleAdsAccounts)
+      .where(tenantId ? eq(googleAdsAccounts.tenantId, tenantId) : undefined),
+    db
+      .select({ value: sql<number>`count(*)::int` })
+      .from(uazapiInstances)
+      .where(tenantId ? eq(uazapiInstances.tenantId, tenantId) : undefined),
+  ]);
+  const typebot = typebotRows[0]?.value ?? 0;
+  const evolution = evolutionRows[0]?.value ?? 0;
+  const googleAds = googleAdsRows[0]?.value ?? 0;
+  const uazapi = uazapiRows[0]?.value ?? 0;
 
   return {
-    typebotBots: typebot?.value ?? 0,
-    evolutionInstances: evolution?.value ?? 0,
-    uazapiInstances: uazapi?.value ?? 0,
-    googleAdsAccounts: googleAds?.value ?? 0,
+    typebotBots: typebot,
+    evolutionInstances: evolution,
+    uazapiInstances: uazapi,
+    googleAdsAccounts: googleAds,
   };
 }
 
@@ -49,7 +59,7 @@ export type TypebotBotRow = {
   name: string | null;
 };
 
-export async function listTypebotBots(): Promise<TypebotBotRow[]> {
+export async function listTypebotBots(tenantId?: string): Promise<TypebotBotRow[]> {
   const db = getDb();
   const rows = await db
     .select({
@@ -61,6 +71,7 @@ export async function listTypebotBots(): Promise<TypebotBotRow[]> {
     })
     .from(typebotBots)
     .innerJoin(tenants, eq(typebotBots.tenantId, tenants.id))
+    .where(tenantId ? eq(typebotBots.tenantId, tenantId) : undefined)
     .orderBy(desc(typebotBots.createdAt));
   return rows.map((r) => ({
     id: r.id,
@@ -80,7 +91,7 @@ export type EvolutionInstanceRow = {
   instanceName: string | null;
 };
 
-export async function listEvolutionInstances(): Promise<EvolutionInstanceRow[]> {
+export async function listEvolutionInstances(tenantId?: string): Promise<EvolutionInstanceRow[]> {
   const db = getDb();
   const rows = await db
     .select({
@@ -93,6 +104,7 @@ export async function listEvolutionInstances(): Promise<EvolutionInstanceRow[]> 
     })
     .from(evolutionInstances)
     .innerJoin(tenants, eq(evolutionInstances.tenantId, tenants.id))
+    .where(tenantId ? eq(evolutionInstances.tenantId, tenantId) : undefined)
     .orderBy(desc(evolutionInstances.createdAt));
   return rows.map((r) => ({
     id: r.id,
@@ -113,7 +125,7 @@ export type UazapiInstanceRow = {
   instanceName: string | null;
 };
 
-export async function listUazapiInstances(): Promise<UazapiInstanceRow[]> {
+export async function listUazapiInstances(tenantId?: string): Promise<UazapiInstanceRow[]> {
   const db = getDb();
   const rows = await db
     .select({
@@ -126,6 +138,7 @@ export async function listUazapiInstances(): Promise<UazapiInstanceRow[]> {
     })
     .from(uazapiInstances)
     .innerJoin(tenants, eq(uazapiInstances.tenantId, tenants.id))
+    .where(tenantId ? eq(uazapiInstances.tenantId, tenantId) : undefined)
     .orderBy(desc(uazapiInstances.createdAt));
 
   return rows.map((r) => ({
@@ -135,5 +148,40 @@ export async function listUazapiInstances(): Promise<UazapiInstanceRow[]> {
     externalId: r.externalId,
     baseUrl: r.baseUrl,
     instanceName: r.instanceName,
+  }));
+}
+
+export type GoogleAdsAccountAdminRow = {
+  id: string;
+  tenantId: string;
+  tenantName: string;
+  externalId: string;
+  label: string | null;
+  currencyCode: string | null;
+};
+
+export async function listGoogleAdsAccounts(tenantId?: string): Promise<GoogleAdsAccountAdminRow[]> {
+  const db = getDb();
+  const rows = await db
+    .select({
+      id: googleAdsAccounts.id,
+      tenantId: googleAdsAccounts.tenantId,
+      tenantName: tenants.name,
+      externalId: googleAdsAccounts.externalId,
+      label: googleAdsAccounts.label,
+      currencyCode: googleAdsAccounts.currencyCode,
+    })
+    .from(googleAdsAccounts)
+    .innerJoin(tenants, eq(googleAdsAccounts.tenantId, tenants.id))
+    .where(tenantId ? eq(googleAdsAccounts.tenantId, tenantId) : undefined)
+    .orderBy(desc(googleAdsAccounts.createdAt));
+
+  return rows.map((row) => ({
+    id: row.id,
+    tenantId: row.tenantId,
+    tenantName: row.tenantName,
+    externalId: row.externalId,
+    label: row.label,
+    currencyCode: row.currencyCode,
   }));
 }

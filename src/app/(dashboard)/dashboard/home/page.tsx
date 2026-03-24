@@ -1,11 +1,14 @@
 import Link from "next/link";
-import { Users, MessageSquare, BarChart3, TrendingUp, MousePointerClick } from "lucide-react";
+import { Users, MessageSquare, BarChart3, TrendingUp, MousePointerClick, LayoutDashboard } from "lucide-react";
 import {
   getDashboardTenantContext,
   getAnalyticsSummaryForTenant,
 } from "@/server/dashboard";
 import { PageSection, StatsRow } from "@/components/layout";
-import { LeadsChart, AdsSpendChart } from "@/components/dashboard-charts";
+import { DashboardPageHeader } from "@/components/layout";
+import { LeadsChart, AdsSpendChart } from "@/components/dashboard-charts-lazy";
+import { DailyCalendar } from "./daily-calendar";
+import { agentDebugLog } from "@/server/debug/agent-debug-log";
 
 const PERIOD_OPTIONS = [
   { value: "7", label: "Últimos 7 dias" },
@@ -29,6 +32,14 @@ function formatCurrency(value: number): string {
     minimumFractionDigits: 2,
     maximumFractionDigits: 2,
   }).format(value);
+}
+
+function formatProvider(provider: string): string {
+  if (provider === "evolution") return "Evolution";
+  if (provider === "uazapi") return "UAZAPI";
+  if (provider === "google_ads") return "Google Ads";
+  if (provider === "typebot") return "Typebot";
+  return provider;
 }
 
 export default async function DashboardHomePage({
@@ -70,23 +81,33 @@ export default async function DashboardHomePage({
       iconClassName: "text-brand-neon",
     },
   ];
+  agentDebugLog({
+    runId: "dashboard-visual-standardization",
+    hypothesisId: "H_CLIENT_LAYOUT_1",
+    location: "src/app/(dashboard)/dashboard/home/page.tsx:DashboardHomePage",
+    message: "Render da home cliente com periodo reposicionado fora dos KPIs",
+    data: {
+      periodDays,
+      totalLeads: summary.totalLeads,
+      totalConversations: summary.totalConversations,
+      totalGoogleAdsAccounts: summary.totalGoogleAdsAccounts,
+      hasPeriodBadge: false,
+      hasPeriodChipNearFilter: true,
+      periodChipLabel: `Período atual: ${summary.periodDays}d`,
+      statsItemsCount: statsItems.length,
+      statsLabels: statsItems.map((item) => item.label),
+    },
+  });
 
   return (
     <>
       <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-        <span className="section-eyebrow">visão executiva</span>
-        <div className="mb-8 flex flex-wrap items-start justify-between gap-6">
-          <div>
-            <h1 className="text-2xl font-semibold text-brand-text sm:mb-2">
-              Início
-            </h1>
-            <p className="max-w-md text-sm text-brand-muted">
-              Visão geral e analítica do tenant. Leads, conversas e aquisição
-              (Google Ads).
-            </p>
-          </div>
-          <StatsRow items={statsItems} className="sm:mt-0 mt-6" />
-        </div>
+        <DashboardPageHeader
+          title="Início"
+          description="Visão geral e analítica da operação com leads, conversas e aquisição."
+          icon={LayoutDashboard}
+          actions={<StatsRow items={statsItems} className="sm:mt-0 mt-2" />}
+        />
 
         {/* Gráficos principais */}
         <div className="mt-8 grid gap-8 lg:grid-cols-2 mb-8">
@@ -111,8 +132,13 @@ export default async function DashboardHomePage({
         </div>
 
         {/* Filtro de período (afeta apenas métricas Ads) */}
-        <div className="flex flex-wrap items-center gap-2 text-sm">
-          <span className="text-brand-muted">Período para métricas Ads:</span>
+        <div className="flex flex-wrap items-center justify-between gap-2 text-sm">
+          <div className="flex flex-wrap items-center gap-2">
+            <span className="text-brand-muted">Período para métricas Ads:</span>
+            <span className="rounded-full border border-brand-border bg-brand-surface px-2.5 py-1 text-xs text-brand-muted">
+              Período atual: {summary.periodDays}d
+            </span>
+          </div>
           <nav className="flex flex-wrap gap-1" aria-label="Período para métricas Ads">
             {PERIOD_OPTIONS.map((opt) => (
               <Link
@@ -191,6 +217,96 @@ export default async function DashboardHomePage({
               Impressões (últimos {summary.periodDays} dias)
             </div>
           </div>
+        </div>
+
+        <div className="mt-6">
+          <DailyCalendar data={summary.calendarLeadsByDay} />
+        </div>
+
+        <div className="mt-6 grid gap-4 lg:grid-cols-2">
+          <section className="panel-lux rounded-xl border border-brand-border bg-brand-surface p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="min-w-0 text-sm font-medium text-brand-muted">
+                Conversas por conta
+              </h2>
+              <Link
+                href="/dashboard/conversations"
+                className="shrink-0 text-sm font-medium text-brand-neon hover:text-brand-neon-hover"
+              >
+                Ver conversas
+              </Link>
+            </div>
+            {summary.conversationsByAccount.length === 0 ? (
+              <p className="text-sm text-brand-muted">
+                Ainda não há conversas vinculadas a contas de integração.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-brand-border text-left">
+                      <th className="py-2 pr-2 font-medium text-brand-muted">Conta</th>
+                      <th className="py-2 pr-2 font-medium text-brand-muted">Provedor</th>
+                      <th className="py-2 font-medium text-brand-muted text-right">Conversas</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.conversationsByAccount.map((row, idx) => (
+                      <tr key={`${row.provider}-${row.accountDisplay}-${idx}`} className="border-b border-brand-border/60 last:border-0">
+                        <td className="py-2 pr-2 text-brand-text">{row.accountDisplay}</td>
+                        <td className="py-2 pr-2 text-brand-muted">{formatProvider(row.provider)}</td>
+                        <td className="py-2 text-right text-brand-neon font-semibold">
+                          {formatNumber(row.totalConversations)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
+
+          <section className="panel-lux rounded-xl border border-brand-border bg-brand-surface p-4">
+            <div className="mb-3 flex items-center justify-between gap-3">
+              <h2 className="min-w-0 text-sm font-medium text-brand-muted">
+                Leads por conta
+              </h2>
+              <Link
+                href="/dashboard/leads"
+                className="shrink-0 text-sm font-medium text-brand-neon hover:text-brand-neon-hover"
+              >
+                Ver leads
+              </Link>
+            </div>
+            {summary.leadsByAccount.length === 0 ? (
+              <p className="text-sm text-brand-muted">
+                Ainda não há leads vinculados a contas de integração.
+              </p>
+            ) : (
+              <div className="overflow-x-auto">
+                <table className="w-full text-sm">
+                  <thead>
+                    <tr className="border-b border-brand-border text-left">
+                      <th className="py-2 pr-2 font-medium text-brand-muted">Conta</th>
+                      <th className="py-2 pr-2 font-medium text-brand-muted">Provedor</th>
+                      <th className="py-2 font-medium text-brand-muted text-right">Leads</th>
+                    </tr>
+                  </thead>
+                  <tbody>
+                    {summary.leadsByAccount.map((row, idx) => (
+                      <tr key={`${row.provider}-${row.accountDisplay}-${idx}`} className="border-b border-brand-border/60 last:border-0">
+                        <td className="py-2 pr-2 text-brand-text">{row.accountDisplay}</td>
+                        <td className="py-2 pr-2 text-brand-muted">{formatProvider(row.provider)}</td>
+                        <td className="py-2 text-right text-brand-neon font-semibold">
+                          {formatNumber(row.totalLeads)}
+                        </td>
+                      </tr>
+                    ))}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </section>
         </div>
       </PageSection>
 

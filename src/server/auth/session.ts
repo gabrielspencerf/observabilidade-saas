@@ -7,6 +7,11 @@ import { getDb } from "@/server/db";
 import { sessions, users, tenants } from "@/db/schema";
 import { authConfig } from "./config";
 import { hashToken, generateOpaqueToken } from "./token";
+import {
+  buildClearCsrfCookieHeader,
+  buildSetCsrfCookieHeader,
+  generateCsrfToken,
+} from "@/server/security/csrf";
 
 const SESSION_COOKIE_NAME = authConfig.cookieName;
 
@@ -39,17 +44,19 @@ export interface CreateSessionParams {
   currentTenantId: string | null;
   ipAddress?: string | null;
   userAgent?: string | null;
+  ttlSeconds?: number;
 }
 
 /**
  * Cria sessão no banco e retorna o token opaco (para o caller setar o cookie).
  */
-export async function createSession(params: CreateSessionParams): Promise<string> {
+export async function createSession(params: CreateSessionParams): Promise<{ token: string; maxAge: number }> {
   const db = getDb();
   const token = generateOpaqueToken();
   const tokenHash = hashToken(token);
   const now = new Date();
-  const expiresAt = new Date(now.getTime() + authConfig.sessionTtlSeconds * 1000);
+  const ttlSeconds = Math.max(60, params.ttlSeconds ?? authConfig.defaultSessionTtlSeconds);
+  const expiresAt = new Date(now.getTime() + ttlSeconds * 1000);
 
   await db.insert(sessions).values({
     userId: params.userId,
@@ -61,7 +68,7 @@ export async function createSession(params: CreateSessionParams): Promise<string
     lastActivityAt: now,
   });
 
-  return token;
+  return { token, maxAge: ttlSeconds };
 }
 
 /**
@@ -179,15 +186,16 @@ export async function invalidateAllSessionsForUser(userId: string): Promise<void
 /**
  * Monta o header Set-Cookie para a sessão (login).
  */
-export function buildSetCookieHeader(token: string): string {
+export function buildSetCookieHeader(token: string, options?: { maxAge?: number }): string {
   const opts = authConfig.cookieOptions;
+  const maxAge = options?.maxAge ?? opts.maxAge;
   const parts = [
     `${SESSION_COOKIE_NAME}=${encodeURIComponent(token)}`,
     "HttpOnly",
     opts.secure ? "Secure" : "",
     `SameSite=${opts.sameSite}`,
     `Path=${opts.path}`,
-    `Max-Age=${opts.maxAge}`,
+    `Max-Age=${maxAge}`,
   ].filter(Boolean);
   return parts.join("; ");
 }
@@ -197,4 +205,12 @@ export function buildSetCookieHeader(token: string): string {
  */
 export function buildClearCookieHeader(): string {
   return `${SESSION_COOKIE_NAME}=; Path=/; HttpOnly; Max-Age=0`;
+}
+
+export function buildSetCsrfCookieFromSession(): string {
+  return buildSetCsrfCookieHeader(generateCsrfToken());
+}
+
+export function buildClearCsrfCookie(): string {
+  return buildClearCsrfCookieHeader();
 }

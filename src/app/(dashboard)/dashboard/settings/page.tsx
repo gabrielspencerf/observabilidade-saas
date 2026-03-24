@@ -5,6 +5,7 @@ import Link from "next/link";
 import { PageSection } from "@/components/layout";
 import { Button, Input, Card, CardContent } from "@/components/ui";
 import { CompanyFilesSection } from "./company-files-section";
+import { Settings, Smartphone } from "lucide-react";
 
 interface ProfilePayload {
   id: string;
@@ -129,10 +130,19 @@ export default function DashboardSettingsPage() {
 
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <h1 className="text-2xl font-semibold text-brand-text">Configurações</h1>
-      <p className="mt-1 text-sm text-brand-muted">
-        Atualize os dados básicos do seu perfil de acesso.
-      </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="rounded-md bg-brand-border/60 p-1.5">
+              <Settings className="h-4 w-4 text-brand-text" />
+            </div>
+            <h1 className="text-2xl font-semibold text-brand-text">Configurações</h1>
+          </div>
+          <p className="mt-2 text-sm text-brand-muted">
+            Atualize os dados do perfil e preferências da conta.
+          </p>
+        </div>
+      </div>
 
       <Card className="mt-6 border-brand-border bg-brand-surface">
         <CardContent className="p-6">
@@ -166,6 +176,26 @@ export default function DashboardSettingsPage() {
               Claro
             </button>
           </div>
+        </CardContent>
+      </Card>
+
+      <Card className="mt-6 border-brand-border bg-brand-surface">
+        <CardContent className="p-6">
+          <div className="flex items-center gap-2">
+            <div className="rounded-md bg-brand-border/60 p-1.5">
+              <Smartphone className="h-4 w-4 text-brand-text" />
+            </div>
+            <h2 className="text-base font-semibold text-brand-text">WhatsApp</h2>
+          </div>
+          <p className="mt-1 text-sm text-brand-muted">
+            Veja o status da instância (Evolution ou UAZAPI) e gere QR para reconectar o aparelho.
+          </p>
+          <Link
+            href="/dashboard/settings/whatsapp"
+            className="mt-4 inline-flex items-center gap-2 rounded-lg border border-brand-border bg-brand-surface/60 px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface transition-colors"
+          >
+            Gerenciar conexão WhatsApp
+          </Link>
         </CardContent>
       </Card>
 

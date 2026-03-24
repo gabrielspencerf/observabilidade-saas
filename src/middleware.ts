@@ -10,11 +10,17 @@ const SESSION_COOKIE_NAME = process.env.SESSION_COOKIE_NAME ?? "session";
 const PUBLIC_PATHS = [
   "/",
   "/login",
+  "/forgot-password",
+  "/reset-password",
   "/admin-login",
   "/forbidden",
   "/api/auth/login",
   "/api/auth/logout",
   "/api/auth/session",
+  "/api/auth/google/start",
+  "/api/auth/google/callback",
+  "/api/auth/password-reset/request",
+  "/api/auth/password-reset/confirm",
   "/api/health",
 ];
 

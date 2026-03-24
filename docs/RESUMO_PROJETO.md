@@ -18,8 +18,10 @@ Visão específica do escopo, forma de execução, etapas, escalabilidade, segur
 - **Admin central:** CRUD de tenants, usuários e memberships; acesso por role `super_admin` (permission `admin:access`).
 - **Integrações:** Cadastro de Typebot, Evolution e UAZAPI pela UI admin; cadastro Google Ads via OAuth no dashboard.
 - **Observabilidade:** Painel admin com status de API/DB/Redis/worker, profundidade de filas e DLQ, status de instâncias Evolution/UAZAPI e erros recentes.
+- **Worker & dados (admin):** Página `/admin/worker-pipeline` com mapa relacional (domínios de tabelas → núcleo Postgres/Redis/worker), métricas de fila/DLQ/heartbeat e pipelines HTTP → staging → fila → processador.
+- **WhatsApp no dashboard:** Em Configurações, fluxo de status e QR para reconectar Evolution/UAZAPI (APIs em `/api/dashboard/integrations/messaging/*`).
 
-**Fora do escopo atual (ou só preparado):** IA (classificações, alertas), cadastro de funis/etapas por UI, observabilidade com alerting externo (Pager/Slack), histórico temporal avançado do funil, múltiplos funis ativos com mapeamento por integração.
+**Fora do escopo atual (ou só preparado):** alerting externo (Pager/Slack), histórico temporal avançado do funil, múltiplos funis ativos com mapeamento por integração (parcialmente suportado no schema).
 
 ---
 
@@ -27,10 +29,10 @@ Visão específica do escopo, forma de execução, etapas, escalabilidade, segur
 
 - **Stack:** Next.js 15 (App Router), React 19, TypeScript, Drizzle ORM + PostgreSQL, Redis (filas), Tailwind, argon2 para senha.
 - **Arquitetura:**
-  - **App:** `app/` — rotas (auth), (dashboard), (admin), `api/` (auth, admin, webhooks, google-ads). Layouts por área; contexto de tenant sempre via `getDashboardTenantContext()` no server.
+  - **App:** `app/` — rotas (auth), (dashboard), (admin), `api/` (auth, admin, dashboard, webhooks, google-ads, meta-ads, etc.). Layouts por área; contexto de tenant sempre via `getDashboardTenantContext()` no server.
   - **Server:** `server/` — auth (sessão em DB, cookie opaco, hash do token), tenancy (membership, troca de tenant), rbac (roles/permissions, `hasPermission`), db (cliente Drizzle singleton), dashboard (leads, conversas, funil, analytics, attribution, google-ads), integrações (google-ads, typebot, evolution) com ingest + validação + parse.
   - **DB:** `db/schema/` — domínios (auth, integrations, raw-events, funnels-leads, conversations, snapshots, ai-alerts-audit); migrations em `db/migrations/`; seeds em `db/seeds/base1.ts`.
-- **Workers:** Processo separado (`npm run worker:dev`), Redis, filas `queue:raw:typebot`, `queue:raw:evolution`, `queue:sync:google-ads`, com DLQ e retry/backoff básicos por tentativa.
+- **Workers:** Processo separado (`npm run worker:dev`), Redis, filas raw (Typebot, Evolution, UAZAPI), sync (Google Ads, Meta Ads, Clarity), `queue:ai:classification`, `queue:followup:due:tenant`, cada uma com DLQ e retry/backoff por tentativa.
 - **Convenções:** Tenant nunca confiado do frontend; sempre do contexto de sessão. Queries sempre filtradas por `tenant_id`. Credenciais globais em .env; por conta/bot/instância no banco (tokens Google criptografados com AES-256-GCM). Sem hardcode de segredos; documentação com placeholders.
 
 ---

@@ -23,7 +23,7 @@ Documento canônico que define como o aplicativo é construído e mantido. **Tod
 - **Landing (`/`):** Dois CTAs: "Entrar na minha conta" → `/login`, "Acesso administrador" → `/admin-login`.
 - **Middleware:** Protege `/dashboard/*` e `/admin/*`; redireciona para `/login` ou `/admin-login` conforme a rota. Rotas públicas: `/`, `/login`, `/admin-login`, `/forbidden`, `/api/auth/*`, `/api/health`.
 - **Não** exibir link para Admin dentro do dashboard do usuário.
-- **RBAC no dashboard (estado atual):** O acesso às páginas do dashboard (home, leads, conversas, Google Ads, funil) exige apenas **sessão válida + tenant atual + membership** nesse tenant. A checagem por permissão por tela (ex.: `leads:read`, `funnels:read`) ainda não está implementada: qualquer usuário com membership no tenant vê todas as áreas. A área admin continua protegida por `admin:access` (super_admin). A implementação de permissões por tela no dashboard está planejada.
+- **RBAC no dashboard:** Sessão + membership continua obrigatório; com **tenant selecionado**, o layout exige `dashboard:read`. As rotas em `/api/dashboard/*` aplicam permissões por recurso (`leads:*`, `funnels:*`, etc.) via `requireDashboardApiAuth` — ver [REVISAO_ACESSO_E_RBAC.md](REVISAO_ACESSO_E_RBAC.md). A sidebar ainda não oculta itens por permissão (melhoria de UX pendente).
 
 ---
 
@@ -149,6 +149,7 @@ src/
 | Referências visuais (Sidebar, Aura) | [design-system/visual-references/](design-system/visual-references/) |
 | Plano de ação do front | [PLANO_ACAO_FRONT.md](PLANO_ACAO_FRONT.md) |
 | Erros e soluções | [log/REGISTRO.md](log/REGISTRO.md) |
+| Revisão geral, env, segurança no Git | [REVISAO_GERAL_2026-03.md](REVISAO_GERAL_2026-03.md) |
 
 ---
 

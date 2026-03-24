@@ -13,7 +13,12 @@ import {
   conversations,
   evolutionInstances,
   uazapiInstances,
+  aiClassifications,
 } from "@/db/schema";
+import {
+  extractAiInsightFromEvidences,
+  type ConversationAiInsight,
+} from "@/server/ai/commercial-agent";
 
 export interface LeadDetailUtm {
   id: string;
@@ -60,6 +65,7 @@ export interface LeadDetail {
   /** Etapa atual do funil. */
   currentFunnelStepId: string | null;
   currentStepName: string | null;
+  aiInsight: ConversationAiInsight | null;
   utmAttributions: LeadDetailUtm[];
   events: LeadDetailEvent[];
   conversations: LeadDetailConversation[];
@@ -155,8 +161,34 @@ export async function getLeadDetailForTenant(
       .orderBy(desc(conversations.startedAt)),
   ]);
 
+  const [classification] = await db
+    .select({
+      summary: aiClassifications.summary,
+      classificationType: aiClassifications.classificationType,
+      confidenceScore: aiClassifications.confidenceScore,
+      evidences: aiClassifications.evidences,
+    })
+    .from(aiClassifications)
+    .where(
+      and(
+        eq(aiClassifications.tenantId, tenantId),
+        eq(aiClassifications.leadId, leadId),
+        eq(aiClassifications.isCurrent, true)
+      )
+    )
+    .orderBy(desc(aiClassifications.processedAt))
+    .limit(1);
+
   return {
     ...lead,
+    aiInsight: classification
+      ? extractAiInsightFromEvidences({
+          summary: classification.summary,
+          classificationType: classification.classificationType,
+          confidenceScore: classification.confidenceScore,
+          evidences: (classification.evidences as Record<string, unknown> | null) ?? null,
+        })
+      : null,
     utmAttributions: utmRows.map((r) => ({
       id: r.id,
       touchType: r.touchType,

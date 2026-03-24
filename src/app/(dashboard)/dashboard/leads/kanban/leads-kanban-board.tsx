@@ -3,16 +3,6 @@
 import { useState } from "react";
 import Link from "next/link";
 
-const STATUS_LABELS: Record<string, string> = {
-  new: "Novo",
-  contacted: "Contactado",
-  qualified: "Qualificado",
-  converted: "Convertido",
-  lost: "Perdido",
-  duplicate: "Duplicado",
-  bad_lead: "Lead ruim",
-};
-
 type LeadRow = {
   id: string;
   name: string | null;
@@ -29,6 +19,27 @@ type Column = {
   label: string;
   leads: LeadRow[];
 };
+
+function formatRelativeDate(value: Date): string {
+  const date = new Date(value);
+  const now = new Date();
+  const diffMs = now.getTime() - date.getTime();
+  const dayMs = 24 * 60 * 60 * 1000;
+  const days = Math.floor(diffMs / dayMs);
+  if (days <= 0) return "hoje";
+  if (days === 1) return "ontem";
+  if (days < 7) return `${days} dias`;
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(date);
+}
+
+function sourceLabel(sourceProvider: string | null): string {
+  if (!sourceProvider) return "manual";
+  if (sourceProvider === "google_ads") return "Google Ads";
+  if (sourceProvider === "uazapi") return "UAZAPI";
+  if (sourceProvider === "typebot") return "Typebot";
+  if (sourceProvider === "evolution") return "Evolution";
+  return sourceProvider;
+}
 
 export function LeadsKanbanBoard({ columns }: { columns: Column[] }) {
   const [moving, setMoving] = useState<string | null>(null);
@@ -90,11 +101,11 @@ export function LeadsKanbanBoard({ columns }: { columns: Column[] }) {
   };
 
   return (
-    <div className="flex gap-4 overflow-x-auto pb-4">
+    <div className="grid gap-3 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
       {localColumns.map((col) => (
         <div
           key={col.status}
-          className="min-w-[280px] flex-shrink-0 rounded-lg border border-brand-border bg-brand-surface/50 p-3"
+          className="kanban-column min-h-[260px] p-3"
           onDragOver={handleDragOver}
           onDrop={(e) => handleDrop(e, col.status)}
         >
@@ -106,30 +117,49 @@ export function LeadsKanbanBoard({ columns }: { columns: Column[] }) {
               {col.leads.length}
             </span>
           </div>
-          <div className="flex flex-col gap-2">
-            {col.leads.map((lead) => (
-              <div
-                key={lead.id}
-                draggable
-                onDragStart={(e) => handleDragStart(e, lead.id)}
-                className={`cursor-grab rounded-md border border-brand-border bg-brand-surface p-3 shadow-sm transition-shadow active:cursor-grabbing hover:shadow ${
-                  moving === lead.id ? "opacity-60" : ""
-                }`}
-              >
-                <Link
-                  href={`/dashboard/leads/${lead.id}`}
-                  className="font-medium text-brand-text hover:text-brand-neon"
-                  onClick={(e) => e.stopPropagation()}
-                >
-                  {lead.name ?? lead.email ?? lead.phone ?? lead.id.slice(0, 8)}
-                </Link>
-                {(lead.email || lead.phone) && (
-                  <p className="mt-1 truncate text-xs text-brand-muted">
-                    {lead.email ?? lead.phone}
-                  </p>
-                )}
+          <div className="flex min-h-[180px] flex-col gap-2">
+            {col.leads.length === 0 ? (
+              <div className="flex min-h-[120px] items-center justify-center rounded-lg border border-dashed border-brand-border/80 bg-brand-surface/40 px-3 text-center text-xs text-brand-muted">
+                Sem leads nesta etapa
               </div>
-            ))}
+            ) : (
+              col.leads.map((lead) => (
+                <div
+                  key={lead.id}
+                  draggable
+                  onDragStart={(e) => handleDragStart(e, lead.id)}
+                  className={`kanban-card cursor-grab p-2.5 active:cursor-grabbing ${
+                    moving === lead.id ? "opacity-60" : ""
+                  }`}
+                >
+                  <div className="flex items-start justify-between gap-2">
+                    <Link
+                      href={`/dashboard/leads/${lead.id}`}
+                      className="line-clamp-1 text-sm font-semibold text-brand-text hover:text-brand-neon"
+                      onClick={(e) => e.stopPropagation()}
+                    >
+                      {lead.name ?? lead.email ?? lead.phone ?? lead.id.slice(0, 8)}
+                    </Link>
+                    <span className="rounded-full border border-brand-border bg-brand-surface/70 px-1.5 py-0.5 text-[10px] uppercase tracking-wide text-brand-muted">
+                      {sourceLabel(lead.sourceProvider)}
+                    </span>
+                  </div>
+                  {(lead.email || lead.phone) && (
+                    <p className="mt-1.5 truncate text-xs text-brand-muted">
+                      {lead.email ?? lead.phone}
+                    </p>
+                  )}
+                  <div className="mt-2 flex items-center justify-between border-t border-brand-border/60 pt-1.5">
+                    <span className="text-[10px] uppercase tracking-wide text-brand-muted">
+                      Atualizado
+                    </span>
+                    <span className="text-[11px] font-medium text-brand-text">
+                      {formatRelativeDate(lead.lastSeenAt)}
+                    </span>
+                  </div>
+                </div>
+              ))
+            )}
           </div>
         </div>
       ))}

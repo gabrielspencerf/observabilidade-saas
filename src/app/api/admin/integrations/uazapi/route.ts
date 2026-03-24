@@ -5,6 +5,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { createUazapiInstance } from "@/server/admin/integrations-create";
 import { checkRateLimit } from "@/server/security/rate-limit";
+import { validateUazapiCredential } from "@/lib/uazapi-credentials";
 
 export async function POST(request: NextRequest) {
   try {
@@ -38,6 +39,8 @@ export async function POST(request: NextRequest) {
     external_id?: string;
     base_url?: string;
     api_key?: string;
+    token?: string;
+    admin_token?: string;
     instance_name?: string;
   };
   try {
@@ -55,12 +58,22 @@ export async function POST(request: NextRequest) {
       { status: 400 }
     );
   }
+  const credentialError = validateUazapiCredential({
+    apiKey: body.api_key ?? null,
+    token: body.token ?? null,
+    adminToken: body.admin_token ?? null,
+  });
+  if (credentialError) {
+    return NextResponse.json({ error: credentialError }, { status: 400 });
+  }
 
   const result = await createUazapiInstance({
     tenantId,
     externalId,
     baseUrl,
     apiKey: body.api_key ?? null,
+    token: body.token ?? null,
+    adminToken: body.admin_token ?? null,
     instanceName: body.instance_name ?? null,
   });
 

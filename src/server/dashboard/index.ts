@@ -10,6 +10,8 @@ export type {
   AnalyticsTopCampaignRow,
   LeadsByDayRow,
   AdsSpendByWeekRow,
+  LeadsByAccountRow,
+  ConversationsByAccountRow,
 } from "./analytics";
 export { listLeadsForTenant } from "./leads";
 export type { LeadRow, ListLeadsOptions } from "./leads";
@@ -45,6 +47,23 @@ export type {
   ListCampaignSnapshotsOptions,
   ListCampaignSnapshotsResult,
 } from "./google-ads";
+export {
+  listMetaAdsAccountsForTenant,
+  listMetaInsightSnapshotsForTenant,
+} from "./meta-ads";
+export type {
+  MetaAdsAccountListRow,
+  MetaInsightSnapshotRow,
+  ListMetaInsightSnapshotsOptions,
+  ListMetaInsightSnapshotsResult,
+} from "./meta-ads";
+export { buildMetaCapiPreviewForTenant, listLeadsForCapiSend } from "./meta-capi";
+export type { MetaCapiPreviewResult, MetaCapiPreviewRow } from "./meta-capi";
+export {
+  listClarityConnectionsForTenant,
+  listLatestClaritySnapshotsForTenant,
+} from "./clarity-dashboard";
+export type { ClaritySnapshotListRow } from "./clarity-dashboard";
 export { getCampaignAttributionForTenant } from "./attribution";
 export type {
   CampaignAttributionRow,

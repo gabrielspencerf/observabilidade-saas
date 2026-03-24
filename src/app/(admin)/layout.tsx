@@ -1,10 +1,24 @@
 import { redirect } from "next/navigation";
+import type { Metadata } from "next";
 import { getCurrentSession } from "@/server/auth";
 import { hasPermission } from "@/server/rbac";
 import { PERMISSION_SLUGS } from "@/server/rbac";
 import { requestFromHeaders } from "@/server/request";
 import { headers } from "next/headers";
 import { AdminShell } from "@/components/admin-shell";
+import { getSidebarInsightsForAdmin } from "@/server/sidebar/insights";
+
+export const metadata: Metadata = {
+  title: {
+    default: "Admin",
+    template: "%s | Admin | Vysen",
+  },
+  robots: {
+    index: false,
+    follow: false,
+    nocache: true,
+  },
+};
 
 export default async function AdminLayout({
   children,
@@ -24,7 +38,14 @@ export default async function AdminLayout({
   if (!canAccessAdmin) {
     redirect("/forbidden");
   }
+  const insights = await getSidebarInsightsForAdmin({ periodDays: 30 });
   return (
-    <AdminShell userEmail={session.user.email}>{children}</AdminShell>
+    <AdminShell
+      userEmail={session.user.email}
+      userName={session.user.name}
+      insights={insights}
+    >
+      {children}
+    </AdminShell>
   );
 }

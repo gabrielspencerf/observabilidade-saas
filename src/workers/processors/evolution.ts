@@ -17,8 +17,10 @@ import {
 import type { JobProcessEvolutionRaw } from "../queue/types";
 import { getEvolutionInstanceSecret } from "@/server/integrations/evolution/credentials";
 import { fetchEvolutionMediaAsBuffer } from "@/server/integrations/evolution/fetch-media";
+import { findOrCreateContactFromRemoteJid } from "@/server/integrations/conversation-contact";
 import { transcribe } from "@/server/integrations/openai/transcribe";
 import { describeImage } from "@/server/integrations/openai/describe-image";
+import { enqueueConversationClassification } from "@/server/ai/enqueue-classification";
 
 const CONVERSATION_STATUS_OPEN = "open";
 
@@ -178,9 +180,19 @@ async function processEvolutionRawInner(
   const { remoteJid, fromMe, messageId, contentType, contentText, messageTimestamp } = parsed;
   const sentAt = new Date(messageTimestamp * 1000);
   const now = new Date();
+  const sentByBot = fromMe;
+  const contactId = await findOrCreateContactFromRemoteJid({
+    tenantId,
+    remoteJid,
+  });
 
+  // Conversa única por tenant + instância + remoteJid (thread de WhatsApp).
+  let conversationId: string;
   const [existingConv] = await db
-    .select({ id: conversations.id, startedAt: conversations.startedAt })
+    .select({
+      id: conversations.id,
+      contactId: conversations.contactId,
+    })
     .from(conversations)
     .where(
       and(
@@ -191,12 +203,15 @@ async function processEvolutionRawInner(
     )
     .limit(1);
 
-  let conversationId: string;
   if (existingConv) {
     conversationId = existingConv.id;
     await db
       .update(conversations)
-      .set({ lastSyncedAt: now, updatedAt: now })
+      .set({
+        lastSyncedAt: now,
+        updatedAt: now,
+        ...(contactId && !existingConv.contactId ? { contactId } : {}),
+      })
       .where(eq(conversations.id, conversationId));
   } else {
     const [inserted] = await db
@@ -204,6 +219,7 @@ async function processEvolutionRawInner(
       .values({
         tenantId,
         evolutionInstanceId,
+        contactId,
         externalId: remoteJid,
         status: CONVERSATION_STATUS_OPEN,
         startedAt: sentAt,
@@ -242,6 +258,7 @@ async function processEvolutionRawInner(
         conversationId,
         externalId: messageId,
         direction: fromMe ? "out" : "in",
+        sentByBot,
         contentType,
         contentText: contentText,
         payload: payload,
@@ -275,6 +292,12 @@ async function processEvolutionRawInner(
           .where(eq(conversationMessages.id, insertedMsg.id));
       }
     }
+
+    // Cada nova mensagem relevante reavalia o resumo/diagnóstico comercial da conversa.
+    await enqueueConversationClassification({
+      tenantId,
+      conversationId,
+    });
   }
 
   await db

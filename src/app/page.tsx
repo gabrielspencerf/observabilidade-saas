@@ -1,9 +1,38 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { Button } from "@/components/ui";
 import { Activity, ArrowRight, BookOpen, ExternalLink, Lock } from "lucide-react";
 import { ThemeToggle } from "@/components/theme-toggle";
+import { BrandMark } from "@/components/brand-mark";
+import { SEO_APP_NAME } from "./seo";
 
 const CNPJ_FORMATTED = "35.050.841/0001-98";
+
+export const metadata: Metadata = {
+  title: "Observabilidade e gestao operacional",
+  description:
+    "Centralize leads, conversas e funis em uma plataforma de observabilidade operacional com IA.",
+  alternates: {
+    canonical: "/",
+  },
+  robots: {
+    index: true,
+    follow: true,
+  },
+  openGraph: {
+    title: `${SEO_APP_NAME} | Observabilidade e gestao operacional`,
+    description:
+      "Centralize leads, conversas e funis em uma plataforma de observabilidade operacional com IA.",
+    url: "/",
+    type: "website",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: `${SEO_APP_NAME} | Observabilidade e gestao operacional`,
+    description:
+      "Centralize leads, conversas e funis em uma plataforma de observabilidade operacional com IA.",
+  },
+};
 
 export default function HomePage() {
   return (
@@ -20,16 +49,7 @@ export default function HomePage() {
       </div>
 
       <nav className="relative z-10 flex w-full items-center justify-between py-6 px-6 sm:px-12 border-b border-brand-border/30">
-        <div className="flex items-center gap-3">
-          <img
-            src="/logo.svg"
-            alt="Creative Lane"
-            width={32}
-            height={32}
-            className="logo-adaptive h-8 w-8"
-          />
-          <span className="font-display font-semibold text-brand-text tracking-tight text-lg hidden sm:inline-block">Creative Lane</span>
-        </div>
+        <BrandMark size="sm" />
         
         <div className="flex items-center gap-4">
           <ThemeToggle />
@@ -170,8 +190,9 @@ export default function HomePage() {
       </div>
 
       <footer className="relative z-10 shrink-0 py-8 px-8 sm:px-12 border-t border-brand-border/30 bg-brand-dark flex flex-col items-center justify-center">
-        <div className="text-sm text-brand-muted font-medium">
-          Creative Lane LTDA — CNPJ {CNPJ_FORMATTED}
+        <div className="text-sm text-brand-muted font-medium">Vysen</div>
+        <div className="mt-1 text-xs text-brand-muted/70">
+          Vysen — CNPJ {CNPJ_FORMATTED}
         </div>
       </footer>
     </main>

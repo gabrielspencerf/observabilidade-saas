@@ -5,4 +5,5 @@
 export * from "./typebot";
 export * from "./evolution";
 export * from "./google-ads";
+export * from "./meta-ads";
 export * from "./uazapi";

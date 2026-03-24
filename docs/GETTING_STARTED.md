@@ -217,6 +217,12 @@ Recarregue a página do Google Ads no dashboard após aplicar.
 
 ---
 
+## Revisão geral, changelog e segurança no Git
+
+Para visão consolidada das evoluções recentes, variáveis de ambiente, logs, o que **não** versionar e checklist antes de push ao GitHub, use **[docs/REVISAO_GERAL_2026-03.md](REVISAO_GERAL_2026-03.md)**.
+
+---
+
 ## Log de erros e soluções
 
 Problemas encontrados durante o projeto (inicialização, ambiente, build, runtime) estão documentados em **[docs/log/](log/)**. Ao resolver um erro novo, vale registrar em [docs/log/REGISTRO.md](log/REGISTRO.md) para referência futura.

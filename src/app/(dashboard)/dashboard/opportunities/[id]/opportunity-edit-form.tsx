@@ -12,6 +12,11 @@ interface OpportunityEditFormProps {
     jobValue: string;
     contractedModel: string;
   };
+  suggestion?: {
+    stage: string;
+    confidenceScore: number | null;
+    commercialErrors: string[];
+  } | null;
 }
 
 const STAGES = [
@@ -24,6 +29,7 @@ const STAGES = [
 export function OpportunityEditForm({
   opportunityId,
   defaultValues,
+  suggestion = null,
 }: OpportunityEditFormProps) {
   const [stage, setStage] = useState(defaultValues.stage || "open");
   const [title, setTitle] = useState(defaultValues.title);
@@ -82,6 +88,32 @@ export function OpportunityEditForm({
         <p className="rounded-lg border border-emerald-500/30 bg-emerald-500/10 px-3 py-2 text-sm text-emerald-300">
           {success}
         </p>
+      )}
+      {suggestion && (
+        <div className="rounded-xl border border-brand-neon/30 bg-brand-surface/60 p-3">
+          <p className="text-xs uppercase tracking-wide text-brand-neon">Sugestão da IA</p>
+          <p className="mt-2 text-sm text-brand-text">
+            Estágio sugerido: <strong>{suggestion.stage}</strong>
+            {suggestion.confidenceScore !== null
+              ? ` (confiança ${(suggestion.confidenceScore * 100).toFixed(0)}%)`
+              : ""}
+          </p>
+          {suggestion.commercialErrors.length > 0 && (
+            <ul className="mt-2 list-disc space-y-1 pl-5 text-xs text-brand-muted">
+              {suggestion.commercialErrors.slice(0, 4).map((item, idx) => (
+                <li key={`${item}-${idx}`}>{item}</li>
+              ))}
+            </ul>
+          )}
+          <Button
+            type="button"
+            variant="secondary"
+            className="mt-3"
+            onClick={() => setStage(suggestion.stage)}
+          >
+            Usar estágio sugerido
+          </Button>
+        </div>
       )}
 
       <div>

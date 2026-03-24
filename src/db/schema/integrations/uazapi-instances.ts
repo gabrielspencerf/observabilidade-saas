@@ -22,6 +22,8 @@ export const uazapiInstances = pgTable(
     externalId: varchar("external_id", { length: 64 }).notNull(),
     baseUrl: varchar("base_url", { length: 512 }).notNull(),
     apiKeyEncrypted: text("api_key_encrypted"),
+    tokenEncrypted: text("token_encrypted"),
+    adminTokenEncrypted: text("admin_token_encrypted"),
     instanceName: varchar("instance_name", { length: 255 }),
     lastSyncedAt: timestamp("last_synced_at", { withTimezone: true, precision: 6 }),
     lastStatus: varchar("last_status", { length: 64 }),

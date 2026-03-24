@@ -7,17 +7,23 @@ import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { users, memberships, tenants } from "@/db/schema";
 import {
+  authConfig,
+  authFeatures,
   createSession,
   buildSetCookieHeader,
+  buildSetCsrfCookieFromSession,
   verifyPassword,
 } from "@/server/auth";
 import { chooseInitialTenantId } from "@/server/tenancy/choose-initial-tenant";
 import { isSuperAdmin } from "@/server/tenancy/membership";
+import { checkRateLimit } from "@/server/security/rate-limit";
+import { resetDbAccessContext } from "@/server/db/access-context";
 
 const GENERIC_ERROR_MESSAGE = "Credenciais inválidas";
 
 export async function POST(request: NextRequest) {
-  let body: { email?: string; password?: string };
+  await resetDbAccessContext();
+  let body: { email?: string; password?: string; remember_me?: boolean };
   try {
     body = await request.json();
   } catch {
@@ -29,6 +35,21 @@ export async function POST(request: NextRequest) {
 
   const email = typeof body.email === "string" ? body.email.trim().toLowerCase() : "";
   const password = typeof body.password === "string" ? body.password : "";
+  const rememberMe = body.remember_me === true;
+
+  const limiter = await checkRateLimit({
+    request,
+    bucket: "auth-login",
+    max: 10,
+    windowSeconds: 15 * 60,
+    resourceKey: email || "any",
+  });
+  if (!limiter.allowed) {
+    return NextResponse.json(
+      { error: "Muitas tentativas de login. Aguarde e tente novamente." },
+      { status: 429 }
+    );
+  }
 
   if (!email || !password) {
     return NextResponse.json({ error: GENERIC_ERROR_MESSAGE }, { status: 401 });
@@ -70,11 +91,17 @@ export async function POST(request: NextRequest) {
   const ipAddress = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() ?? request.headers.get("x-real-ip") ?? null;
   const userAgent = request.headers.get("user-agent") ?? null;
 
-  const token = await createSession({
+  const ttlSeconds =
+    authFeatures.rememberMeEnabled && rememberMe
+      ? authConfig.rememberMeTtlSeconds
+      : authConfig.defaultSessionTtlSeconds;
+
+  const session = await createSession({
     userId: user.id,
     currentTenantId: initialTenantId,
     ipAddress,
     userAgent,
+    ttlSeconds,
   });
 
   const superAdmin = await isSuperAdmin(user.id);
@@ -82,6 +109,10 @@ export async function POST(request: NextRequest) {
     { ok: true, isSuperAdmin: superAdmin },
     { status: 200 }
   );
-  response.headers.set("Set-Cookie", buildSetCookieHeader(token));
+  response.headers.append(
+    "Set-Cookie",
+    buildSetCookieHeader(session.token, { maxAge: session.maxAge })
+  );
+  response.headers.append("Set-Cookie", buildSetCsrfCookieFromSession());
   return response;
 }

@@ -5,17 +5,33 @@
  */
 import { NextRequest, NextResponse } from "next/server";
 import { requireAuth } from "@/server/auth";
+import { PERMISSION_SLUGS, requirePermission } from "@/server/rbac";
 import { switchTenant } from "@/server/tenancy/switch";
 
 export async function POST(request: NextRequest) {
   let session;
   try {
     session = await requireAuth(request);
+    if (session.session.currentTenantId) {
+      await requirePermission(
+        session.user.id,
+        session.session.currentTenantId,
+        PERMISSION_SLUGS.TENANT_SWITCH
+      );
+    }
   } catch (err) {
     const e = err as Error & { status?: number };
+    const status = e.status ?? 401;
     return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
+      {
+        error:
+          status === 403
+            ? "Sem permissão"
+            : status === 400
+              ? e.message || "Requisição inválida"
+              : "Não autenticado",
+      },
+      { status }
     );
   }
 

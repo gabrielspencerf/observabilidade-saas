@@ -3,7 +3,12 @@
  * Usa NEXT_PUBLIC_APP_URL para evitar redirect para host interno (0.0.0.0, localhost do container).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { invalidateCurrent, buildClearCookieHeader } from "@/server/auth";
+import {
+  invalidateCurrent,
+  buildClearCookieHeader,
+  buildClearCsrfCookie,
+} from "@/server/auth";
+import { resetDbAccessContext } from "@/server/db/access-context";
 
 const APP_URL =
   typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
@@ -12,10 +17,12 @@ const APP_URL =
     : null;
 
 export async function POST(request: NextRequest) {
+  await resetDbAccessContext();
   await invalidateCurrent(request);
   const baseUrl = APP_URL ?? request.nextUrl.origin;
   const loginUrl = new URL("/login", baseUrl);
   const response = NextResponse.redirect(loginUrl, 302);
-  response.headers.set("Set-Cookie", buildClearCookieHeader());
+  response.headers.append("Set-Cookie", buildClearCookieHeader());
+  response.headers.append("Set-Cookie", buildClearCsrfCookie());
   return response;
 }

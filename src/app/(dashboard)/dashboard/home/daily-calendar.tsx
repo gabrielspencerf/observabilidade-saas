@@ -1,0 +1,293 @@
+"use client";
+
+import { useMemo, useState } from "react";
+
+type DayData = {
+  date: string;
+  leads: number;
+};
+
+const WEEKDAY_LABELS = ["Dom", "Seg", "Ter", "Qua", "Qui", "Sex", "Sáb"];
+
+function parseDateKey(dateKey: string): Date {
+  const [year, month, day] = dateKey.split("-").map(Number);
+  return new Date(Date.UTC(year, month - 1, day));
+}
+
+function formatDateLabel(date: string): string {
+  return new Intl.DateTimeFormat("pt-BR", { day: "2-digit", month: "2-digit" }).format(
+    parseDateKey(date)
+  );
+}
+
+function formatLongDateLabel(date: string): string {
+  return new Intl.DateTimeFormat("pt-BR", {
+    weekday: "long",
+    day: "2-digit",
+    month: "long",
+  }).format(parseDateKey(date));
+}
+
+function intensityClass(leads: number): string {
+  if (leads >= 10) return "bg-brand-neon/45 border-brand-neon/60";
+  if (leads >= 5) return "bg-brand-neon/30 border-brand-neon/45";
+  if (leads >= 1) return "bg-brand-neon/15 border-brand-neon/30";
+  return "bg-brand-surface/80 border-brand-border";
+}
+
+function intensityLabel(leads: number): string {
+  if (leads >= 10) return "Alto";
+  if (leads >= 5) return "Médio";
+  if (leads >= 1) return "Baixo";
+  return "Sem captação";
+}
+
+function deltaClass(delta: number): string {
+  if (delta > 0) return "text-emerald-400";
+  if (delta < 0) return "text-rose-400";
+  return "text-brand-text";
+}
+
+export function DailyCalendar({ data }: { data: DayData[] }) {
+  const leadsByDate = useMemo(() => {
+    const map = new Map<string, number>();
+    for (const item of data) map.set(item.date, item.leads);
+    return map;
+  }, [data]);
+
+  const calendarDays = useMemo(() => {
+    if (data.length === 0) return [];
+    const firstDate = parseDateKey(data[0].date);
+    const year = firstDate.getUTCFullYear();
+    const month = firstDate.getUTCMonth();
+    const firstWeekday = firstDate.getUTCDay();
+    const monthLength = new Date(Date.UTC(year, month + 1, 0)).getUTCDate();
+
+    const out: Array<{ key: string; day: number; date: string | null; leads: number }> = [];
+    for (let i = 0; i < firstWeekday; i++) {
+      out.push({ key: `empty-${i}`, day: 0, date: null, leads: 0 });
+    }
+    for (let day = 1; day <= monthLength; day++) {
+      const d = new Date(Date.UTC(year, month, day));
+      const dateKey = d.toISOString().slice(0, 10);
+      out.push({
+        key: dateKey,
+        day,
+        date: dateKey,
+        leads: leadsByDate.get(dateKey) ?? 0,
+      });
+    }
+    return out;
+  }, [data, leadsByDate]);
+
+  const monthLabel = useMemo(() => {
+    if (data.length === 0) return "";
+    return new Intl.DateTimeFormat("pt-BR", { month: "long", year: "numeric" }).format(
+      parseDateKey(data[0].date)
+    );
+  }, [data]);
+
+  const todayKey = useMemo(() => {
+    const now = new Date();
+    return new Date(Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate()))
+      .toISOString()
+      .slice(0, 10);
+  }, []);
+
+  const [selectedDate, setSelectedDate] = useState<string | null>(() => {
+    if (data.some((d) => d.date === todayKey)) return todayKey;
+    return data[0]?.date ?? null;
+  });
+
+  const selectedLeads = selectedDate ? leadsByDate.get(selectedDate) ?? 0 : 0;
+  const yesterdayLeads = useMemo(() => {
+    if (!selectedDate) return 0;
+    const d = parseDateKey(selectedDate);
+    d.setUTCDate(d.getUTCDate() - 1);
+    const key = d.toISOString().slice(0, 10);
+    return leadsByDate.get(key) ?? 0;
+  }, [selectedDate, leadsByDate]);
+  const selectedDelta = selectedLeads - yesterdayLeads;
+
+  const recentList = useMemo(() => {
+    return data
+      .slice()
+      .sort((a, b) => (a.date > b.date ? -1 : 1))
+      .slice(0, 5);
+  }, [data]);
+
+  const monthTotalLeads = useMemo(() => data.reduce((acc, item) => acc + item.leads, 0), [data]);
+
+  const peakDay = useMemo(() => {
+    return data.reduce<DayData | null>((best, current) => {
+      if (!best) return current;
+      return current.leads > best.leads ? current : best;
+    }, null);
+  }, [data]);
+
+  const handleMoveSelection = (offsetDays: number) => {
+    if (!selectedDate) return;
+    const current = parseDateKey(selectedDate);
+    current.setUTCDate(current.getUTCDate() + offsetDays);
+    const nextKey = current.toISOString().slice(0, 10);
+    if (!leadsByDate.has(nextKey)) return;
+    setSelectedDate(nextKey);
+  };
+
+  return (
+    <div className="panel-lux rounded-xl border border-brand-border bg-brand-surface p-4">
+      <div className="mb-4 flex items-end justify-between gap-3">
+        <div>
+          <h3 className="text-sm font-semibold uppercase tracking-wide text-brand-neon">
+            Calendário de leads
+          </h3>
+          <p className="text-xs text-brand-muted">
+            Visão compacta mensal com resumo do dia selecionado.
+          </p>
+        </div>
+        {monthLabel ? (
+          <span className="rounded-md border border-brand-border bg-brand-surface px-2 py-1 text-xs font-medium capitalize text-brand-muted">
+            {monthLabel}
+          </span>
+        ) : null}
+      </div>
+
+      {data.length === 0 ? (
+        <p className="text-xs text-brand-muted">Sem dados para o mês atual.</p>
+      ) : (
+        <>
+          <div className="mb-4 flex flex-wrap items-center gap-2 text-xs">
+            <span className="rounded-full border border-brand-border bg-brand-surface/80 px-2.5 py-1 text-brand-muted">
+              Total no mês: <strong className="text-brand-text">{monthTotalLeads}</strong>
+            </span>
+            {peakDay ? (
+              <button
+                type="button"
+                className="rounded-full border border-brand-neon/30 bg-brand-neon/10 px-2.5 py-1 text-brand-neon transition hover:bg-brand-neon/15"
+                onClick={() => setSelectedDate(peakDay.date)}
+              >
+                Pico: {formatDateLabel(peakDay.date)} ({peakDay.leads})
+              </button>
+            ) : null}
+            <button
+              type="button"
+              className="rounded-full border border-brand-border bg-brand-surface/80 px-2.5 py-1 text-brand-muted transition hover:border-brand-neon/40 hover:text-brand-text"
+              onClick={() => setSelectedDate(todayKey)}
+              disabled={!leadsByDate.has(todayKey)}
+            >
+              Ir para hoje
+            </button>
+          </div>
+
+          <div className="grid gap-4 lg:grid-cols-[minmax(0,380px)_minmax(0,1fr)]">
+        <div className="max-w-[380px]">
+          <div className="mb-2 grid grid-cols-7 gap-1.5">
+            {WEEKDAY_LABELS.map((label) => (
+              <div
+                key={label}
+                className="text-center text-[10px] font-medium uppercase tracking-wide text-brand-muted"
+              >
+                {label}
+              </div>
+            ))}
+          </div>
+
+          <div
+            className="grid grid-cols-7 gap-1.5"
+            role="grid"
+            aria-label="Calendário de captação de leads por dia"
+            tabIndex={0}
+            onKeyDown={(event) => {
+              if (event.key === "ArrowLeft") {
+                event.preventDefault();
+                handleMoveSelection(-1);
+              } else if (event.key === "ArrowRight") {
+                event.preventDefault();
+                handleMoveSelection(1);
+              } else if (event.key === "ArrowUp") {
+                event.preventDefault();
+                handleMoveSelection(-7);
+              } else if (event.key === "ArrowDown") {
+                event.preventDefault();
+                handleMoveSelection(7);
+              }
+            }}
+          >
+            {calendarDays.map((day) =>
+              day.date ? (
+                <button
+                  key={day.key}
+                  type="button"
+                  onClick={() => setSelectedDate(day.date)}
+                  title={`${formatDateLabel(day.date)} - ${day.leads} leads`}
+                  aria-label={`${formatDateLabel(day.date)} com ${day.leads} leads`}
+                  className={`relative h-12 rounded-md border px-2 py-1 text-left transition focus:outline-none focus-visible:ring-2 focus-visible:ring-brand-neon/45 hover:border-brand-neon/60 ${
+                    selectedDate === day.date
+                      ? "border-brand-neon/70 ring-1 ring-brand-neon/30 shadow-[0_0_0_1px_rgba(0,200,130,0.2)]"
+                      : intensityClass(day.leads)
+                  }`}
+                >
+                  <span className="text-xs font-semibold text-brand-text">{day.day}</span>
+                  {day.leads > 0 ? (
+                    <span className="absolute bottom-1 right-1 rounded bg-brand-dark/70 px-1 text-[10px] font-medium text-brand-neon">
+                      {day.leads}
+                    </span>
+                  ) : null}
+                </button>
+              ) : (
+                <div key={day.key} className="h-12 rounded-md border border-transparent" />
+              )
+            )}
+          </div>
+        </div>
+
+        <div className="rounded-lg border border-brand-border bg-brand-surface/50 p-4">
+          <h4 className="text-sm font-semibold text-brand-text">Dia atual selecionado</h4>
+          <p className="mt-1 text-xs capitalize text-brand-muted">
+            {selectedDate ? formatLongDateLabel(selectedDate) : "Sem data selecionada"}
+          </p>
+
+          <ul className="mt-4 space-y-2 text-sm">
+            <li className="flex items-center justify-between rounded-md border border-brand-border bg-brand-surface/80 px-3 py-2">
+              <span className="text-brand-muted">Leads no dia</span>
+              <strong className="text-brand-text">{selectedLeads}</strong>
+            </li>
+            <li className="flex items-center justify-between rounded-md border border-brand-border bg-brand-surface/80 px-3 py-2">
+              <span className="text-brand-muted">Nível</span>
+              <strong className="text-brand-text">{intensityLabel(selectedLeads)}</strong>
+            </li>
+            <li className="flex items-center justify-between rounded-md border border-brand-border bg-brand-surface/80 px-3 py-2">
+              <span className="text-brand-muted">Comparação com ontem</span>
+              <strong className={deltaClass(selectedDelta)}>
+                {selectedDelta >= 0 ? "+" : ""}
+                {selectedDelta}
+              </strong>
+            </li>
+          </ul>
+
+          <div className="mt-4">
+            <p className="mb-2 text-xs font-medium uppercase tracking-wide text-brand-muted">
+              Lista rápida (últimos dias)
+            </p>
+            <ul className="space-y-1.5">
+              {recentList.map((item) => (
+                <li key={item.date}>
+                  <button
+                    type="button"
+                    className="flex w-full items-center justify-between rounded-md px-2 py-1 text-left text-xs text-brand-muted transition hover:bg-brand-surface hover:text-brand-text"
+                    onClick={() => setSelectedDate(item.date)}
+                  >
+                    <span>{formatDateLabel(item.date)}</span>
+                    <span className="font-medium text-brand-text">{item.leads} leads</span>
+                  </button>
+                </li>
+              ))}
+            </ul>
+          </div>
+        </div>
+          </div>
+        </>
+      )}
+    </div>
+  );
+}

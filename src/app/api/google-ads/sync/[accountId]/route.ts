@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSession } from "@/server/auth";
+import { requireAuth } from "@/server/auth";
 import { getCurrentMembership } from "@/server/tenancy/membership";
 import { getGoogleAdsAccountById } from "@/server/integrations/google-ads";
 import { createRedisClient } from "@/server/redis";
@@ -14,12 +14,18 @@ export async function POST(
   _request: NextRequest,
   context: { params: Promise<{ accountId: string }> }
 ) {
-  const cookie = _request.headers.get("cookie") ?? "";
-  const req = new Request(_request.url, { headers: cookie ? { cookie } : {} });
-  const session = await getCurrentSession(req);
-
-  if (!session) {
-    return NextResponse.json({ error: "Não autenticado" }, { status: 401 });
+  let session;
+  try {
+    session = await requireAuth(_request);
+  } catch (err) {
+    const e = err as Error & { status?: number };
+    const status = e.status ?? 401;
+    const url = new URL(_request.url);
+    const dest =
+      status === 403
+        ? `/dashboard/google-ads?google_ads_error=csrf`
+        : `/login?from=${encodeURIComponent("/dashboard/google-ads")}`;
+    return NextResponse.redirect(new URL(dest, url.origin), { status: 302 });
   }
 
   const currentTenantId = session.session.currentTenantId;

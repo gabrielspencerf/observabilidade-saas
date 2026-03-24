@@ -4,6 +4,14 @@ Itens mais recentes no topo. Formato: **Contexto** → **Erro** → **Causa** �
 
 ---
 
+## Revisão de documentação e higiene para Git — 2026-03-20
+
+- **Contexto:** Consolidar changelog, variáveis, segurança e evitar vazamento de infra no repositório.
+- **Ação:** Criado [docs/REVISAO_GERAL_2026-03.md](../REVISAO_GERAL_2026-03.md); atualizados `SECURITY_ENDPOINTS_MAP`, `RESUMO_PROJETO`, `GETTING_STARTED`; exemplos em `.env.example` e `stack.env.example` anonimizados (sem domínio/e-mail de cliente); fallback de `SMTP_FROM` no código alterado para endereço genérico; `.gitignore` ampliado para dumps/backups comuns.
+- **Referência:** checklist pré-push e lista do que não versionar no doc de revisão geral.
+
+---
+
 ## 1. Inicialização da aplicação (Next.js dev) — 2025-03-09
 
 ### 1.1 PowerShell: token `&&` inválido

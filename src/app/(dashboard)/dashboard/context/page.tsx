@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
+import { Building2 } from "lucide-react";
 
 interface TenantOption {
   id: string;
@@ -94,12 +95,22 @@ export default function DashboardContextPage() {
 
   return (
     <div className="px-1 py-0 sm:px-2">
-      <h1 className="text-lg font-semibold text-brand-text">
-        Selecione um tenant
-      </h1>
-      <p className="mt-1 text-sm text-brand-muted">
-        Escolha o contexto de trabalho para continuar.
-      </p>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="rounded-md bg-brand-border/60 p-1.5">
+              <Building2 className="h-4 w-4 text-brand-text" />
+            </div>
+            <h1 className="text-2xl font-semibold text-brand-text">Selecione um tenant</h1>
+          </div>
+          <p className="mt-2 text-sm text-brand-muted">
+            Escolha o contexto de trabalho para continuar.
+          </p>
+        </div>
+        <span className="rounded-full border border-brand-border px-2.5 py-1 text-xs text-brand-muted">
+          {tenants.length} opções
+        </span>
+      </div>
       {error && (
         <div
           role="alert"

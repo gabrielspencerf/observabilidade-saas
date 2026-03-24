@@ -1,23 +1,33 @@
 "use client";
 
 import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
+import { validateUazapiCredential } from "@/lib/uazapi-credentials";
+import { ProviderBrandIcon } from "@/components/provider-brand-icon";
 
 type Tenant = { id: string; name: string; slug: string };
 
 export default function NewUazapiInstancePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [externalId, setExternalId] = useState("");
   const [baseUrl, setBaseUrl] = useState("");
   const [apiKey, setApiKey] = useState("");
+  const [token, setToken] = useState("");
+  const [adminToken, setAdminToken] = useState("");
   const [instanceName, setInstanceName] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<{ id: string } | null>(null);
+
+  useEffect(() => {
+    const preselectedTenantId = searchParams.get("tenantId");
+    if (preselectedTenantId) setTenantId(preselectedTenantId);
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/admin/tenants")
@@ -28,6 +38,15 @@ export default function NewUazapiInstancePage() {
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
+    const credentialError = validateUazapiCredential({
+      apiKey,
+      token,
+      adminToken,
+    });
+    if (credentialError) {
+      setError(credentialError);
+      return;
+    }
     setError(null);
     setSubmitting(true);
     try {
@@ -39,6 +58,8 @@ export default function NewUazapiInstancePage() {
           external_id: externalId.trim(),
           base_url: baseUrl.trim(),
           api_key: apiKey.trim() || undefined,
+          token: token.trim() || undefined,
+          admin_token: adminToken.trim() || undefined,
           instance_name: instanceName.trim() || undefined,
         }),
       });
@@ -81,9 +102,16 @@ export default function NewUazapiInstancePage() {
           ← Voltar às integrações
         </Link>
       </div>
-      <h1 className="text-xl font-semibold text-brand-text">Conectar instância UAZAPI</h1>
+      <h1 className="inline-flex items-center gap-2 text-xl font-semibold text-brand-text">
+        <ProviderBrandIcon provider="uazapi" className="h-5 w-5 rounded" />
+        Conectar instância UAZAPI
+      </h1>
       <p className="mt-1 text-sm text-brand-muted">
         Cadastre uma instância UAZAPI para operar em paralelo com a Evolution.
+      </p>
+      <p className="mt-1 inline-flex items-center gap-1 text-xs text-brand-muted">
+        <ProviderBrandIcon provider="whatsapp" className="h-3.5 w-3.5 rounded" />
+        Conector para canal WhatsApp.
       </p>
       <form onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
         {error && (
@@ -99,7 +127,7 @@ export default function NewUazapiInstancePage() {
             id="tenant"
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text"
+            className="app-select mt-1 block"
             required
           >
             <option value="">Selecione</option>
@@ -152,6 +180,32 @@ export default function NewUazapiInstancePage() {
           />
         </div>
         <div>
+          <label htmlFor="token" className="block text-sm font-medium text-brand-muted">
+            Token da instância (opcional)
+          </label>
+          <Input
+            id="token"
+            type="password"
+            value={token}
+            onChange={(e) => setToken(e.target.value)}
+            placeholder="Ex: 85f5de3a-451b-4fd4-a615-35718ececf04"
+            className="mt-1"
+          />
+        </div>
+        <div>
+          <label htmlFor="admin_token" className="block text-sm font-medium text-brand-muted">
+            Admin token (opcional)
+          </label>
+          <Input
+            id="admin_token"
+            type="password"
+            value={adminToken}
+            onChange={(e) => setAdminToken(e.target.value)}
+            placeholder="Se o endpoint exigir admin token"
+            className="mt-1"
+          />
+        </div>
+        <div>
           <label htmlFor="api_key" className="block text-sm font-medium text-brand-muted">
             API Key (opcional)
           </label>
@@ -160,7 +214,7 @@ export default function NewUazapiInstancePage() {
             type="password"
             value={apiKey}
             onChange={(e) => setApiKey(e.target.value)}
-            placeholder="Se a UAZAPI exige autenticação"
+            placeholder="Use apenas se o provedor trabalhar com API key"
             className="mt-1"
           />
         </div>

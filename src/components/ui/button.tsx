@@ -33,7 +33,7 @@ const Button = React.forwardRef<HTMLButtonElement, ButtonProps>(
       <button
         ref={ref}
         className={cn(
-          "inline-flex items-center justify-center gap-2 font-medium focus-visible:outline-none",
+          "fx-button inline-flex items-center justify-center gap-2 font-medium focus-visible:outline-none",
           variants[variant],
           sizes[size],
           className

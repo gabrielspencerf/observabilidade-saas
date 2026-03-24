@@ -4,89 +4,60 @@
  * Sidebar do admin.
  */
 
-import Link from "next/link";
 import { usePathname } from "next/navigation";
-import {
-  LayoutDashboard,
-  Box,
-  Activity,
-  Building2,
-  Users,
-} from "lucide-react";
+import { SidebarNavSections } from "@/components/sidebar-nav-sections";
+import { SidebarInsightsCarousel } from "@/components/sidebar-insights-carousel";
+import { adminNavSections } from "@/components/sidebar-navigation";
 import { Button } from "@/components/ui";
-
-const navItems: { href: string; label: string; icon: React.ComponentType<{ className?: string }> }[] = [
-  { href: "/admin", label: "Início", icon: LayoutDashboard },
-  { href: "/admin/integrations", label: "Integrações", icon: Box },
-  { href: "/admin/observability", label: "Observabilidade", icon: Activity },
-  { href: "/admin/tenants", label: "Tenants", icon: Building2 },
-  { href: "/admin/users", label: "Usuários", icon: Users },
-];
+import type { SidebarInsightsPayload } from "@/types/sidebar-insights";
 
 interface AdminSidebarProps {
   userEmail: string;
+  userName?: string | null;
+  insights: SidebarInsightsPayload;
 }
 
-export function AdminSidebar({ userEmail }: AdminSidebarProps) {
+export function AdminSidebar({ userEmail, userName, insights }: AdminSidebarProps) {
   const pathname = usePathname();
+  const displayName = userName?.trim() || userEmail.split("@")[0] || "Usuário";
+  const avatarLetter = displayName.charAt(0).toUpperCase();
 
   return (
     <aside className="sidebar flex h-full flex-col scroll-hide overflow-y-auto overflow-x-hidden border-r border-brand-border">
       <div className="flex flex-1 flex-col">
-        {/* Logo + cabeçalho da conta */}
+        {/* Topo: branding e boas-vindas */}
         <div className="border-b border-brand-border p-4">
-          <div className="flex items-center gap-2 mb-2">
-            <div className="brand-logo-avatar shrink-0">
-              <img
-                src="/logo.svg"
-                alt="Creative Lane"
-                width={18}
-                height={18}
-                className="logo-adaptive h-[18px] w-[18px] shrink-0 text-brand-text"
-              />
+          <div className="flex flex-col gap-1 px-2">
+            <div className="text-xs font-medium uppercase tracking-wider text-brand-muted">
+              SUPERADMIN
             </div>
-            <span className="text-sm font-semibold text-brand-text">
-              Creative Lane
-            </span>
-          </div>
-          <div className="text-xs font-medium text-brand-muted uppercase tracking-wider mt-2">
-            Administração
+            <h2 className="truncate text-lg font-semibold text-brand-text">Vysen</h2>
+            <p className="text-xs text-brand-muted">Bem-vindo Sr.</p>
           </div>
         </div>
 
-        {/* Navegação: item ativo = verde, inativo = texto muted */}
-        <nav className="select-none p-4 pt-6 text-sm flex flex-col gap-1">
-          {navItems.map(({ href, label, icon: Icon }) => {
-            const isActive =
-              pathname === href || (pathname.startsWith(href + "/") && href !== "/admin");
-            return (
-              <Link
-                key={href}
-                href={href}
-                className={`sidebar-nav-item mx-2 flex items-center gap-3 px-4 py-3 ${
-                  isActive
-                    ? "sidebar-nav-item-active"
-                    : ""
-                }`}
-              >
-                <Icon className="h-5 w-5 shrink-0" aria-hidden />
-                <span className="min-w-0 flex-1">{label}</span>
-              </Link>
-            );
-          })}
-        </nav>
+        <SidebarNavSections
+          pathname={pathname}
+          sections={adminNavSections}
+          bottomSlot={<SidebarInsightsCarousel insights={insights} />}
+        />
 
-        {/* Rodapé: email + sair */}
+        {/* Rodapé: usuário + ações */}
         <div className="mt-auto border-t border-brand-border p-4">
-          <p className="truncate text-xs text-brand-muted" title={userEmail}>
-            {userEmail}
-          </p>
-          <div className="mt-2 flex flex-wrap items-center gap-2">
-            <Link href="/">
-              <Button type="button" variant="ghost" size="sm">
-                Voltar
-              </Button>
-            </Link>
+          <div className="flex items-center gap-3 rounded-xl border border-brand-border bg-brand-surface/50 px-3 py-2">
+            <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brand-border bg-brand-surface text-sm font-semibold text-brand-text shadow-sm">
+              {avatarLetter}
+            </div>
+            <div className="min-w-0">
+              <p className="truncate text-sm font-medium text-brand-text" title={displayName}>
+                {displayName}
+              </p>
+              <p className="truncate text-xs text-brand-muted" title={userEmail}>
+                {userEmail}
+              </p>
+            </div>
+          </div>
+          <div className="mt-2 flex flex-wrap items-center gap-2 px-2">
             <form action="/api/auth/logout" method="POST">
               <Button type="submit" variant="ghost" size="sm">
                 Sair

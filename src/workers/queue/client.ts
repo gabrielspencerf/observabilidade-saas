@@ -10,10 +10,18 @@ import {
   QUEUE_RAW_EVOLUTION,
   QUEUE_RAW_UAZAPI,
   QUEUE_SYNC_GOOGLE_ADS,
+  QUEUE_SYNC_META_ADS,
+  QUEUE_SYNC_CLARITY,
+  QUEUE_AI_CLASSIFICATION,
+  QUEUE_FOLLOWUP_DUE_TENANT,
   DLQ_RAW_TYPEBOT,
   DLQ_RAW_EVOLUTION,
   DLQ_RAW_UAZAPI,
   DLQ_SYNC_GOOGLE_ADS,
+  DLQ_SYNC_META_ADS,
+  DLQ_SYNC_CLARITY,
+  DLQ_AI_CLASSIFICATION,
+  DLQ_FOLLOWUP_DUE_TENANT,
 } from "./types";
 
 export {
@@ -21,10 +29,18 @@ export {
   QUEUE_RAW_EVOLUTION,
   QUEUE_RAW_UAZAPI,
   QUEUE_SYNC_GOOGLE_ADS,
+  QUEUE_SYNC_META_ADS,
+  QUEUE_SYNC_CLARITY,
+  QUEUE_AI_CLASSIFICATION,
+  QUEUE_FOLLOWUP_DUE_TENANT,
   DLQ_RAW_TYPEBOT,
   DLQ_RAW_EVOLUTION,
   DLQ_RAW_UAZAPI,
   DLQ_SYNC_GOOGLE_ADS,
+  DLQ_SYNC_META_ADS,
+  DLQ_SYNC_CLARITY,
+  DLQ_AI_CLASSIFICATION,
+  DLQ_FOLLOWUP_DUE_TENANT,
 };
 
 function getQueueName(job: JobPayload): string {
@@ -37,6 +53,14 @@ function getQueueName(job: JobPayload): string {
       return QUEUE_RAW_UAZAPI;
     case "sync_google_ads_account":
       return QUEUE_SYNC_GOOGLE_ADS;
+    case "sync_meta_ads_account":
+      return QUEUE_SYNC_META_ADS;
+    case "sync_clarity_connection":
+      return QUEUE_SYNC_CLARITY;
+    case "classify_conversation":
+      return QUEUE_AI_CLASSIFICATION;
+    case "process_due_followups_tenant":
+      return QUEUE_FOLLOWUP_DUE_TENANT;
     default:
       throw new Error("Unknown job type");
   }

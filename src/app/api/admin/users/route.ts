@@ -4,6 +4,8 @@
 import { NextRequest, NextResponse } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { createUser } from "@/server/admin/users";
+import { authFeatures } from "@/server/auth";
+import { sendInitialAccessEmail } from "@/server/auth/password-reset";
 
 export async function POST(request: NextRequest) {
   let session;
@@ -22,6 +24,7 @@ export async function POST(request: NextRequest) {
     email?: string;
     password?: string;
     is_active?: boolean;
+    send_access_email?: boolean;
   };
   try {
     body = await request.json();
@@ -35,7 +38,7 @@ export async function POST(request: NextRequest) {
   const result = await createUser({
     name: body.name ?? null,
     email: body.email ?? "",
-    password: body.password ?? "",
+    password: body.password,
     isActive: body.is_active ?? true,
   });
 
@@ -48,5 +51,18 @@ export async function POST(request: NextRequest) {
         : 409;
     return NextResponse.json({ error: result.error }, { status });
   }
-  return NextResponse.json({ id: result.id }, { status: 201 });
+  const sendAccessEmail = body.send_access_email ?? true;
+  let accessEmail: { sent: boolean; error?: string } = { sent: false };
+  if (authFeatures.passwordResetEnabled && sendAccessEmail) {
+    const sent = await sendInitialAccessEmail({
+      userId: result.id,
+      email: result.email,
+      name: result.name,
+    });
+    accessEmail = sent.ok
+      ? { sent: true }
+      : { sent: false, error: sent.error ?? "Falha ao enviar email inicial." };
+  }
+
+  return NextResponse.json({ id: result.id, accessEmail }, { status: 201 });
 }

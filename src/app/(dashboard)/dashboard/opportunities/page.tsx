@@ -4,6 +4,7 @@ import {
   listOpportunitiesForTenant,
 } from "@/server/dashboard";
 import { PageSection, ListTableHeader, ListRowCard } from "@/components/layout";
+import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { TrendingUp } from "lucide-react";
 
@@ -35,9 +36,12 @@ export default async function DashboardOpportunitiesPage() {
 
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-brand-text">Oportunidades</h1>
-      </div>
+      <DashboardPageHeader
+        title="Oportunidades"
+        description="Pipeline comercial com estágio, valor e evolução dos negócios."
+        icon={TrendingUp}
+        badges={[`${opportunities.length} itens`]}
+      />
 
       {opportunities.length === 0 ? (
         <EmptyState

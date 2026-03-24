@@ -1,5 +1,7 @@
 export { integrations } from "./integrations";
 export { googleAdsAccounts } from "./google-ads-accounts";
+export { metaAdsAccounts } from "./meta-ads-accounts";
+export { clarityConnections } from "./clarity-connections";
 export { typebotBots } from "./typebot-bots";
 export { evolutionInstances } from "./evolution-instances";
 export { uazapiInstances } from "./uazapi-instances";

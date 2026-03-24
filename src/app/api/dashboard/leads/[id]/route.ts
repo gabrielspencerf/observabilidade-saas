@@ -3,7 +3,9 @@
  * Body: { name?, email?, phone?, status? }
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth";
+import { requireDashboardApiAuth } from "@/server/dashboard/api-auth";
+import { dashboardApiAuthErrorResponse } from "@/server/dashboard/api-route-errors";
+import { PERMISSION_SLUGS } from "@/server/rbac";
 import { updateLeadForTenant } from "@/server/dashboard";
 
 export async function PATCH(
@@ -12,22 +14,12 @@ export async function PATCH(
 ) {
   let session;
   try {
-    session = await requireAuth(request);
+    session = await requireDashboardApiAuth(request, PERMISSION_SLUGS.LEADS_WRITE);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return dashboardApiAuthErrorResponse(err);
   }
 
-  const tenantId = session.session.currentTenantId;
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Tenant não selecionado" },
-      { status: 400 }
-    );
-  }
+  const tenantId = session.session.currentTenantId!;
 
   const { id: leadId } = await params;
   if (!leadId) {
@@ -90,6 +82,7 @@ export async function PATCH(
     email,
     phone,
     status,
+    actorUserId: session.user.id,
   });
 
   if (!result.ok) {

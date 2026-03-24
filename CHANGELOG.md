@@ -2,6 +2,21 @@
 
 Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 
+## [0.3.0] - 2026-03-20
+
+### Adicionado
+
+- **Dashboard:** reconexão WhatsApp (Evolution/UAZAPI) em Configurações e entrada em Canais; APIs tenant com proxy seguro para QR/status.
+- **Admin:** página Worker & pipeline (filas, métricas e fluxo operacional).
+- **Admin:** diagrama relacional de entidades (mapa arquitetural com ligações).
+
+### Alterado
+
+- Mensagens de erro de status/conexão de messaging mais amigáveis (sem expor detalhe técnico ao usuário final).
+- Documentação: revisão geral, mapa de endpoints, checklist de segurança, exemplos de deploy e `.gitignore` alinhados ao versionamento seguro.
+
+---
+
 ## [0.2.1] - 2025-03-17
 
 ### Alterado
@@ -53,6 +68,7 @@ Formato baseado em [Keep a Changelog](https://keepachangelog.com/pt-BR/1.0.0/).
 - Áreas: landing, login, admin-login, dashboard (home, leads, conversas, Google Ads, funil), admin (integrations, observability, tenants, users).
 - Design system CL (brand, sidebar ZincMail, layout Aura).
 
+[0.3.0]: https://github.com/gabrielspencerf/observabilidade-saas/compare/v0.2.1...v0.3.0
 [0.2.1]: https://github.com/gabrielspencerf/observabilidade-saas/compare/v0.2.0...v0.2.1
 [0.2.0]: https://github.com/gabrielspencerf/observabilidade-saas/compare/v0.1.0...v0.2.0
 [0.1.0]: https://github.com/gabrielspencerf/observabilidade-saas/releases/tag/v0.1.0

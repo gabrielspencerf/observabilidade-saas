@@ -38,6 +38,9 @@ export default async function LeadsKanbanPage() {
         <p className="mt-1 text-sm text-brand-muted">
           Arraste os cards entre colunas para alterar o status do lead.
         </p>
+        <p className="mt-2 text-xs text-brand-muted">
+          Total de leads no quadro: {leads.length}
+        </p>
       </div>
       <LeadsKanbanBoard columns={columns} />
     </PageSection>

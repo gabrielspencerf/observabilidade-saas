@@ -67,7 +67,7 @@ npm run dev
 
 - **db:create** — Cria o banco `app` se não existir.
 - **db:migrate** — Aplica as migrations (tabelas).
-- **db:seed** — Cria o usuário hub@creativelane.io e o tenant.
+- **db:seed** — Cria o usuário admin definido em `SEED_ADMIN_EMAIL` e o tenant de teste.
 - **dev** — Sobe a aplicação; faça login com o e-mail e a senha do seed.
 
 ---

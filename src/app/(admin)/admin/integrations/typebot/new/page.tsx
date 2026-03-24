@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 
@@ -9,6 +9,7 @@ type Tenant = { id: string; name: string; slug: string };
 
 export default function NewTypebotBotPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [externalId, setExternalId] = useState("");
@@ -19,6 +20,11 @@ export default function NewTypebotBotPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<{ id: string; webhook_url: string } | null>(null);
+
+  useEffect(() => {
+    const preselectedTenantId = searchParams.get("tenantId");
+    if (preselectedTenantId) setTenantId(preselectedTenantId);
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/admin/tenants")
@@ -127,7 +133,7 @@ export default function NewTypebotBotPage() {
             id="tenant"
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text"
+            className="app-select mt-1 block"
             required
           >
             <option value="">Selecione</option>

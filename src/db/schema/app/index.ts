@@ -1,4 +1,5 @@
 export { appGlobalConfig } from "./app-global-config";
+export { internalNotifications } from "./internal-notifications";
 export { tenantAssets } from "./tenant-assets";
 export { onboardingSteps } from "./onboarding-steps";
 export { tenantOnboardingProgress } from "./tenant-onboarding-progress";

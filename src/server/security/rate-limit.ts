@@ -1,11 +1,21 @@
 import { createHash } from "crypto";
 import type { NextRequest } from "next/server";
 import { createRedisClient } from "@/server/redis";
+import { env } from "@/config/env";
 
 function clientIpFromRequest(request: NextRequest): string {
-  const forwardedFor = request.headers.get("x-forwarded-for");
-  if (forwardedFor) {
-    return forwardedFor.split(",")[0]?.trim() || "unknown";
+  const trustedHops = env.rateLimitTrustedProxyHops;
+  const forwardedFor = request.headers.get("x-forwarded-for")?.trim();
+  if (trustedHops > 0 && forwardedFor) {
+    const chain = forwardedFor
+      .split(",")
+      .map((value) => value.trim())
+      .filter(Boolean);
+    if (chain.length > 0) {
+      // Exemplo: client, proxy1, proxy2. Com 1 hop confiável => lê proxy1 anterior.
+      const index = Math.max(0, chain.length - trustedHops - 1);
+      return chain[index] ?? "unknown";
+    }
   }
   return request.headers.get("x-real-ip")?.trim() || "unknown";
 }

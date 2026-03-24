@@ -33,16 +33,16 @@ Build no manager (recomendado para subir pela primeira vez):
 ```bash
 gh repo clone gabrielspencerf/observabilidade-saas
 cd observabilidade-saas
-git checkout v0.2.0
-docker build -t observabilidade-saas:v0.2.0 .
+git checkout v0.3.0
+docker build -t observabilidade-saas:v0.3.0 .
 ```
 
 Ou via registry:
 
 ```bash
-docker build -t SEU_USUARIO/observabilidade-saas:v0.2.0 .
-docker push SEU_USUARIO/observabilidade-saas:v0.2.0
-# Na VPS: docker pull ... e tag como observabilidade-saas:v0.2.0
+docker build -t SEU_USUARIO/observabilidade-saas:v0.3.0 .
+docker push SEU_USUARIO/observabilidade-saas:v0.3.0
+# Na VPS: docker pull ... e tag como observabilidade-saas:v0.3.0
 ```
 
 ---
@@ -58,9 +58,9 @@ cp stack.env.example stack.env
 ```
 
 ```env
-APP_IMAGE=observabilidade-saas:v0.2.0
-APP_HOST=hub.creativelane.io
-NEXT_PUBLIC_APP_URL=https://hub.creativelane.io
+APP_IMAGE=observabilidade-saas:v0.3.0
+APP_HOST=app.exemplo.com
+NEXT_PUBLIC_APP_URL=https://app.exemplo.com
 POSTGRES_PASSWORD=troque-por-um-valor-forte
 SESSION_SECRET=troque-por-um-valor-longo-e-aleatorio
 TZ=America/Sao_Paulo

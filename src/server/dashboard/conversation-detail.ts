@@ -11,14 +11,19 @@ import {
   evolutionInstances,
   uazapiInstances,
   leads,
+  aiClassifications,
 } from "@/db/schema";
+import { extractAiInsightFromEvidences, type ConversationAiInsight } from "@/server/ai/commercial-agent";
 
 export interface ConversationDetailMessage {
   id: string;
   direction: string;
   contentType: string;
   contentText: string | null;
+  payload: Record<string, unknown> | null;
   sentAt: Date;
+  /** True quando a mensagem foi enviada por agente/IA/BOT. */
+  sentByBot: boolean;
 }
 
 export interface ConversationDetail {
@@ -31,6 +36,8 @@ export interface ConversationDetail {
   leadId: string | null;
   leadName: string | null;
   leadEmail: string | null;
+  leadPhone: string | null;
+  aiInsight: ConversationAiInsight | null;
   messages: ConversationDetailMessage[];
 }
 
@@ -57,6 +64,7 @@ export async function getConversationDetailForTenant(
       uazapiInstanceExternalId: uazapiInstances.externalId,
       leadName: leads.name,
       leadEmail: leads.email,
+      leadPhone: leads.phone,
     })
     .from(conversations)
     .leftJoin(
@@ -84,11 +92,30 @@ export async function getConversationDetailForTenant(
       direction: conversationMessages.direction,
       contentType: conversationMessages.contentType,
       contentText: conversationMessages.contentText,
+      payload: conversationMessages.payload,
       sentAt: conversationMessages.sentAt,
+      sentByBot: conversationMessages.sentByBot,
     })
     .from(conversationMessages)
     .where(eq(conversationMessages.conversationId, conversationId))
     .orderBy(asc(conversationMessages.sentAt));
+
+  const [classification] = await db
+    .select({
+      summary: aiClassifications.summary,
+      classificationType: aiClassifications.classificationType,
+      confidenceScore: aiClassifications.confidenceScore,
+      evidences: aiClassifications.evidences,
+    })
+    .from(aiClassifications)
+    .where(
+      and(
+        eq(aiClassifications.tenantId, tenantId),
+        eq(aiClassifications.conversationId, conversationId),
+        eq(aiClassifications.isCurrent, true)
+      )
+    )
+    .limit(1);
 
   const evolutionDisplay =
     (row.evolutionInstanceName && row.evolutionInstanceName.trim()) ||
@@ -110,12 +137,23 @@ export async function getConversationDetailForTenant(
     leadId: row.leadId,
     leadName: row.leadName,
     leadEmail: row.leadEmail,
+    leadPhone: row.leadPhone,
+    aiInsight: classification
+      ? extractAiInsightFromEvidences({
+          summary: classification.summary,
+          classificationType: classification.classificationType,
+          confidenceScore: classification.confidenceScore,
+          evidences: (classification.evidences as Record<string, unknown> | null) ?? null,
+        })
+      : null,
     messages: messages.map((m) => ({
       id: m.id,
       direction: m.direction,
       contentType: m.contentType,
       contentText: m.contentText,
+      payload: (m.payload as Record<string, unknown> | null) ?? null,
       sentAt: m.sentAt,
+      sentByBot: m.sentByBot ?? false,
     })),
   };
 }

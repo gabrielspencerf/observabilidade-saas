@@ -4,7 +4,7 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { getCurrentSession } from "@/server/auth";
+import { requireAuth } from "@/server/auth";
 import { getCurrentMembership } from "@/server/tenancy/membership";
 import { saveOrUpdateGoogleAdsAccount } from "@/server/integrations/google-ads";
 import { consumePendingConnection } from "@/server/google-ads-pending";
@@ -17,13 +17,14 @@ function redirectError(request: NextRequest, code: string, message?: string) {
 }
 
 export async function POST(request: NextRequest) {
-  const cookie = request.headers.get("cookie") ?? "";
-  const req = new Request(request.url, {
-    headers: cookie ? { cookie } : {},
-  });
-  const session = await getCurrentSession(req);
-
-  if (!session) {
+  let session;
+  try {
+    session = await requireAuth(request);
+  } catch (err) {
+    const e = err as Error & { status?: number };
+    if (e.status === 403) {
+      return redirectError(request, "csrf", "Sessão de segurança inválida. Atualize a página e tente de novo.");
+    }
     return redirectError(request, "unauthorized", "Não autenticado");
   }
 

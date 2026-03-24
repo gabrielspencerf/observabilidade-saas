@@ -11,12 +11,24 @@
 # Env (nunca versionar segredos)
 .env
 .env*.local
+.env.production
+.env.production.local
 stack.env
 /pgdata
 
-# Docker stack (deploy local/Portainer; não versionar para evitar vazar chaves)
+# Backups e dumps (podem conter PII e credenciais)
+*.dump
+*.sql.gz
+*.rdb
+dump.sql
+**/pg_dump*.sql
+
+# Docker stack (APENAS LOCAL / VPS — NUNCA subir no GitHub)
 docker-stack.swarm.yml
 docker-stack.swarm.app-only.yml
+docker-stack.swarm.example.yml
+docker-stack*.yml
+*.stack.local.yml
 
 # Debug / logs
 npm-debug.log*
@@ -29,6 +41,9 @@ next-env.d.ts
 
 # Uploads (arquivos enviados pelos tenants)
 /uploads
+
+# Cursor debug logs (local)
+.cursor/debug*.log
 
 # Misc
 .DS_Store

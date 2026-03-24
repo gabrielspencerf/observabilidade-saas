@@ -78,3 +78,7 @@ Esta release consolida melhorias de UX/UI no Dashboard e Admin, padronizacao de 
 
 - Esta release e focada em UX/UI e robustez operacional.
 - Nao exige migracao de dados manual alem do fluxo normal de `db:migrate`.
+
+## Documentacao posterior a esta release
+
+Evolucoes consolidadas (worker pipeline, mapa relacional, APIs de WhatsApp no dashboard, higiene de repositorio): ver **[REVISAO_GERAL_2026-03.md](REVISAO_GERAL_2026-03.md)**.

@@ -2,7 +2,7 @@
  * Processador: raw event UAZAPI → conversations / conversation_messages.
  * Paridade com Evolution: mesmo fluxo (eventos de mensagem → conversa + mensagem).
  * Payload esperado no formato compatível com Evolution (event, data.key, data.message).
- * Áudio/imagem: por enquanto só persiste legenda; transcrição/descrição pode ser adicionada quando houver API de mídia UAZAPI.
+ * Áudio/imagem: persiste legenda e tenta descrever imagem quando houver conteúdo inline no payload.
  */
 
 import { and, eq } from "drizzle-orm";
@@ -12,15 +12,28 @@ import {
   conversations,
   conversationMessages,
 } from "@/db/schema";
+import { findOrCreateContactFromRemoteJid } from "@/server/integrations/conversation-contact";
 import type { JobProcessUazapiRaw } from "../queue/types";
+import { describeImage } from "@/server/integrations/openai/describe-image";
+import { extractInlineMediaBufferFromPayload } from "@/server/integrations/media/payload-media";
+import { enqueueConversationClassification } from "@/server/ai/enqueue-classification";
 
 const CONVERSATION_STATUS_OPEN = "open";
 
+/** Eventos de mensagem aceitos (UAZAPI pode usar nomes diferentes da Evolution; normalizados para minúsculas com ponto). */
 const SUPPORTED_MESSAGE_EVENTS = new Set([
   "messages.upsert",
   "messages_upsert",
   "send.message",
   "send_message",
+  "message",
+  "message.received",
+  "message.receive",
+  "message_received",
+  "on.message",
+  "on_message",
+  "received.message",
+  "received_message",
 ]);
 
 function stringOrNull(v: unknown): string | null {
@@ -164,9 +177,19 @@ async function processUazapiRawInner(
   const { remoteJid, fromMe, messageId, contentType, contentText, messageTimestamp } = parsed;
   const sentAt = new Date(messageTimestamp * 1000);
   const now = new Date();
+  const sentByBot = fromMe;
+  const contactId = await findOrCreateContactFromRemoteJid({
+    tenantId,
+    remoteJid,
+  });
 
+  // Conversa única por tenant + instância + remoteJid (thread de WhatsApp).
+  let conversationId: string;
   const [existingConv] = await db
-    .select({ id: conversations.id, startedAt: conversations.startedAt })
+    .select({
+      id: conversations.id,
+      contactId: conversations.contactId,
+    })
     .from(conversations)
     .where(
       and(
@@ -177,12 +200,15 @@ async function processUazapiRawInner(
     )
     .limit(1);
 
-  let conversationId: string;
   if (existingConv) {
     conversationId = existingConv.id;
     await db
       .update(conversations)
-      .set({ lastSyncedAt: now, updatedAt: now })
+      .set({
+        lastSyncedAt: now,
+        updatedAt: now,
+        ...(contactId && !existingConv.contactId ? { contactId } : {}),
+      })
       .where(eq(conversations.id, conversationId));
   } else {
     const [inserted] = await db
@@ -190,6 +216,7 @@ async function processUazapiRawInner(
       .values({
         tenantId,
         uazapiInstanceId,
+        contactId,
         externalId: remoteJid,
         status: CONVERSATION_STATUS_OPEN,
         startedAt: sentAt,
@@ -221,15 +248,35 @@ async function processUazapiRawInner(
     .limit(1);
 
   if (!existingMsg) {
-    await db.insert(conversationMessages).values({
+    const [insertedMsg] = await db.insert(conversationMessages).values({
       tenantId,
       conversationId,
       externalId: messageId,
       direction: fromMe ? "out" : "in",
+      sentByBot,
       contentType,
       contentText: contentText,
       payload: payload,
       sentAt,
+    }).returning({ id: conversationMessages.id });
+
+    if (insertedMsg && contentType === "image") {
+      const description = await tryDescribeUazapiImage(payload);
+      if (description) {
+        await db
+          .update(conversationMessages)
+          .set({
+            contentText: contentText?.trim()
+              ? `${contentText.trim()}\n\n— Descrição: ${description}`
+              : description,
+          })
+          .where(eq(conversationMessages.id, insertedMsg.id));
+      }
+    }
+
+    await enqueueConversationClassification({
+      tenantId,
+      conversationId,
     });
   }
 
@@ -239,4 +286,12 @@ async function processUazapiRawInner(
     .where(eq(uazapiWebhookEvents.id, rawEventId));
 
   return { ok: true };
+}
+
+async function tryDescribeUazapiImage(
+  payload: Record<string, unknown>
+): Promise<string | null> {
+  const media = extractInlineMediaBufferFromPayload(payload, "image");
+  if (!media) return null;
+  return describeImage(media.buffer, media.mimeType ?? undefined);
 }

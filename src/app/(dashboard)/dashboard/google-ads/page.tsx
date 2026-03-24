@@ -1,16 +1,25 @@
 import Link from "next/link";
+import { cookies } from "next/headers";
 import {
   getDashboardTenantContext,
   listGoogleAdsAccountsForTenant,
   listCampaignSnapshotsForTenant,
   getCampaignAttributionForTenant,
+  getLandingPageUrlForTenant,
+  listPageSpeedResultsForTenant,
 } from "@/server/dashboard";
 import { PageSection, ListTableHeader, ListRowCard } from "@/components/layout";
+import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui";
 import { BarChart3 } from "lucide-react";
-import { AdsSpendChart } from "@/components/dashboard-charts";
+import { AdsSpendChart } from "@/components/dashboard-charts-lazy";
 import { env } from "@/config/env";
+import { PageSpeedForm } from "../pagespeed/pagespeed-form";
+import { PageSpeedResults } from "../pagespeed/pagespeed-results";
+import { OfflineGoogleSheetActions } from "./offline-google-sheet-actions";
+import { agentDebugLog } from "@/server/debug/agent-debug-log";
+import { getCsrfCookieName } from "@/server/security/csrf";
 
 const PAGE_SIZE = 50;
 
@@ -78,7 +87,17 @@ export default async function DashboardGoogleAdsPage({
     period?: string;
   }>;
 }) {
+  function extractScore(result: Record<string, unknown>): number | null {
+    const cat = result?.categories as Record<string, unknown> | undefined;
+    const perf = cat?.performance as Record<string, unknown> | undefined;
+    const score = perf?.score;
+    if (typeof score === "number") return Math.round(score * 100);
+    return null;
+  }
+
   const { tenantId } = await getDashboardTenantContext();
+  const csrfToken =
+    (await cookies()).get(getCsrfCookieName())?.value ?? "";
   const params = await searchParams;
   const syncStatus = typeof params.sync === "string" ? params.sync : null;
   const connectedStatus =
@@ -105,7 +124,7 @@ export default async function DashboardGoogleAdsPage({
     ? Number(periodParam)
     : 30;
 
-  const [accounts, snapshotResult, attributionResult] = await Promise.all([
+  const [accounts, snapshotResult, attributionResult, landingUrl, pageSpeedResults] = await Promise.all([
     listGoogleAdsAccountsForTenant(tenantId),
     listCampaignSnapshotsForTenant(tenantId, {
       accountId,
@@ -117,7 +136,13 @@ export default async function DashboardGoogleAdsPage({
     getCampaignAttributionForTenant(tenantId, {
       periodDays: attributionPeriodDays,
     }),
+    getLandingPageUrlForTenant(tenantId),
+    listPageSpeedResultsForTenant(tenantId, { limit: 30 }),
   ]);
+  const resultsWithScore = pageSpeedResults.map((row) => ({
+    ...row,
+    score: extractScore(row.result),
+  }));
 
   const attributionRows = attributionResult.campaigns;
   const attributionSummary = attributionResult.summary;
@@ -126,6 +151,17 @@ export default async function DashboardGoogleAdsPage({
   const totalPages = Math.max(1, Math.ceil(totalSnapshots / PAGE_SIZE));
   const hasPrev = page > 1;
   const hasNext = page < totalPages;
+  agentDebugLog({
+    runId: "dashboard-visual-standardization",
+    hypothesisId: "H_CLIENT_STYLE_3",
+    location: "src/app/(dashboard)/dashboard/google-ads/page.tsx:DashboardGoogleAdsPage",
+    message: "Render do Google Ads com header padronizado",
+    data: {
+      accounts: accounts.length,
+      snapshots: snapshots.length,
+      attributionRows: attributionRows.length,
+    },
+  });
   const filterParams = {
     accountId,
     periodFrom,
@@ -147,28 +183,29 @@ export default async function DashboardGoogleAdsPage({
   return (
     <div className="space-y-6">
       <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-        <span className="section-eyebrow">aquisição paga</span>
-        <div className="flex flex-wrap items-center justify-between gap-4 mb-4">
-          <h1 className="text-2xl font-bold text-brand-text">Google Ads</h1>
-          {env.googleAdsConnectEnabled ? (
-            <Link href="/api/google-ads/auth/start">
-              <Button className="btn-cta-primary text-sm">
-                Conectar nova conta
+        <DashboardPageHeader
+          title="Google Ads"
+          description="Contas conectadas e métricas por campanha sincronizadas."
+          icon={BarChart3}
+          badges={[`${accounts.length} contas`]}
+          actions={
+            env.googleAdsConnectEnabled ? (
+              <Link href="/api/google-ads/auth/start">
+                <Button className="btn-cta-primary text-sm">
+                  Conectar nova conta
+                </Button>
+              </Link>
+            ) : (
+              <Button
+                disabled
+                className="btn-cta-primary text-sm opacity-60 cursor-not-allowed"
+                title="Autenticação por conta em breve"
+              >
+                Conectar nova conta (em breve)
               </Button>
-            </Link>
-          ) : (
-            <Button
-              disabled
-              className="btn-cta-primary text-sm opacity-60 cursor-not-allowed"
-              title="Autenticação por conta em breve"
-            >
-              Conectar nova conta (em breve)
-            </Button>
-          )}
-        </div>
-        <p className="text-sm text-brand-muted">
-          Contas conectadas e métricas por campanha sincronizadas.
-        </p>
+            )
+          }
+        />
 
         {syncStatus === "enqueued" && (
           <div className="mt-4 rounded bg-brand-neon/10 border border-brand-neon/20 px-4 py-3 text-sm text-brand-neon">
@@ -230,6 +267,7 @@ export default async function DashboardGoogleAdsPage({
                 </div>
                 <div className="lg:text-right">
                   <form action={`/api/google-ads/sync/${acc.id}`} method="POST">
+                    <input type="hidden" name="csrf_token" value={csrfToken} />
                     <Button type="submit" variant="secondary" size="sm" className="text-xs border-brand-border text-brand-text hover:text-brand-neon">
                       Sincronizar
                     </Button>
@@ -357,7 +395,7 @@ export default async function DashboardGoogleAdsPage({
               id="accountId"
               name="accountId"
               defaultValue={accountId ?? ""}
-              className="w-full rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-neon"
+              className="app-select"
             >
               <option value="">Todas</option>
               {accounts.map((acc) => (
@@ -377,7 +415,7 @@ export default async function DashboardGoogleAdsPage({
               name="periodFrom"
               type="date"
               defaultValue={periodFrom}
-              className="w-full rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-neon"
+              className="app-date-input w-full px-3 py-2 text-sm"
             />
           </div>
           <div className="w-[140px]">
@@ -389,7 +427,7 @@ export default async function DashboardGoogleAdsPage({
               name="periodTo"
               type="date"
               defaultValue={periodTo}
-              className="w-full rounded-lg border border-brand-border bg-brand-dark px-3 py-2 text-sm text-brand-text focus:outline-none focus:ring-1 focus:ring-brand-neon"
+              className="app-date-input w-full px-3 py-2 text-sm"
             />
           </div>
           <Button type="submit" variant="secondary" className="border-brand-border">
@@ -488,23 +526,37 @@ export default async function DashboardGoogleAdsPage({
           </a>{" "}
           (Ferramentas e configurações → Medição → Conversões → Importar).
         </p>
-        <div className="mt-4 flex flex-wrap gap-3">
-          <Link
-            href="/dashboard/leads"
-            className="inline-flex items-center gap-2 rounded-md border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface/80"
-          >
-            Exportar leads
-          </Link>
+        <OfflineGoogleSheetActions />
+        <div className="mt-3">
           <a
             href="https://support.google.com/google-ads/answer/6331314"
             target="_blank"
             rel="noopener noreferrer"
-            className="inline-flex items-center gap-2 rounded-md border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface/80"
+            className="text-xs text-brand-muted underline-offset-4 hover:text-brand-text hover:underline"
           >
-            Modelo e instruções (Google)
+            Ver modelo oficial e instruções do Google
           </a>
         </div>
       </PageSection>
+
+      <div id="pagespeed">
+        <PageSection>
+          <span className="section-eyebrow mb-2">qualidade da landing</span>
+          <h2 className="mb-2 text-sm font-semibold uppercase tracking-wide text-brand-neon">
+            PageSpeed
+          </h2>
+          <p className="mb-4 text-sm text-brand-muted">
+            Configure a URL da landing e acompanhe historico de performance por dispositivo.
+          </p>
+          <PageSpeedForm initialUrl={landingUrl ?? ""} />
+          <div className="mt-6">
+            <h3 className="mb-3 text-sm font-semibold uppercase tracking-wide text-brand-muted">
+              Historico por data e dispositivo
+            </h3>
+            <PageSpeedResults results={resultsWithScore} />
+          </div>
+        </PageSection>
+      </div>
     </div>
   );
 }

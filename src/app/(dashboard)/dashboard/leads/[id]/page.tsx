@@ -6,6 +6,7 @@ import {
 } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
+import { LeadAiSuggestionCard } from "@/components/dashboard/lead-ai-suggestion-card";
 
 function formatDate(d: Date): string {
   return new Intl.DateTimeFormat("pt-BR", {
@@ -108,6 +109,16 @@ export default async function DashboardLeadDetailPage({
             )}
           </dl>
         </div>
+        {lead.aiInsight?.suggestedLeadStatus && (
+          <div className="mt-6">
+            <LeadAiSuggestionCard
+              leadId={lead.id}
+              suggestedStatus={lead.aiInsight.suggestedLeadStatus}
+              confidenceScore={lead.aiInsight.confidenceScore}
+              commercialErrors={lead.aiInsight.commercialErrors}
+            />
+          </div>
+        )}
       </PageSection>
 
       {lead.utmAttributions.length > 0 && (

@@ -47,6 +47,15 @@ export default async function DashboardOpportunityDetailPage({
           jobValue: opportunity.jobValue ?? "",
           contractedModel: opportunity.contractedModel ?? "",
         }}
+        suggestion={
+          opportunity.aiInsight?.suggestedOpportunityStage
+            ? {
+                stage: opportunity.aiInsight.suggestedOpportunityStage,
+                confidenceScore: opportunity.aiInsight.confidenceScore,
+                commercialErrors: opportunity.aiInsight.commercialErrors,
+              }
+            : null
+        }
       />
     </PageSection>
   );

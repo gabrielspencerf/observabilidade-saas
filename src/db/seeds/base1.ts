@@ -113,6 +113,46 @@ export async function run(): Promise<void> {
       .onConflictDoNothing({ target: [rolePermissions.roleId, rolePermissions.permissionId] });
   }
 
+  async function linkRoleToPermissionSlugs(roleId: string, slugs: string[]) {
+    if (slugs.length === 0) return;
+    const rows = await db
+      .select({ id: permissions.id })
+      .from(permissions)
+      .where(inArray(permissions.slug, slugs));
+    const ids = rows.map((r) => r.id);
+    if (ids.length === 0) return;
+    await db
+      .insert(rolePermissions)
+      .values(ids.map((permissionId) => ({ roleId, permissionId })))
+      .onConflictDoNothing({ target: [rolePermissions.roleId, rolePermissions.permissionId] });
+  }
+
+  const viewerRoleId = roleById.viewer;
+  const operatorRoleId = roleById.operator;
+  const adminTenantRoleId = roleById.admin_tenant;
+  if (viewerRoleId) {
+    await linkRoleToPermissionSlugs(viewerRoleId, [
+      "dashboard:read",
+      "tenant:switch",
+      "leads:read",
+      "funnels:read",
+    ]);
+  }
+  if (operatorRoleId) {
+    await linkRoleToPermissionSlugs(operatorRoleId, [
+      "dashboard:read",
+      "tenant:switch",
+      "leads:read",
+      "leads:write",
+      "funnels:read",
+      "funnels:write",
+    ]);
+  }
+  if (adminTenantRoleId) {
+    const tenantFacing = PERMISSION_SLUGS.map((p) => p.slug).filter((s) => s !== "admin:access");
+    await linkRoleToPermissionSlugs(adminTenantRoleId, tenantFacing);
+  }
+
   // 4. Tenant (idempotente)
   await db
     .insert(tenants)

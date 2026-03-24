@@ -21,4 +21,4 @@ npm run db:seed
 if ($LASTEXITCODE -ne 0) { exit 1 }
 
 Write-Host "`nSetup concluido. Rode: npm run dev" -ForegroundColor Green
-Write-Host "Login: use o email e senha do SEED_* no .env (ex.: hub@creativelane.io)" -ForegroundColor Green
+Write-Host "Login: use o email e senha do SEED_* no .env (ex.: admin@exemplo.com)" -ForegroundColor Green

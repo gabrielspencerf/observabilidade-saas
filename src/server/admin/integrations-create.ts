@@ -4,7 +4,27 @@
 import { getDb } from "@/server/db";
 import { typebotBots, evolutionInstances, integrations, uazapiInstances } from "@/db/schema";
 import { hashWebhookSecret } from "@/server/integrations/webhook-secret";
-import { encryptSecret } from "@/server/security/secret-crypto";
+import { encryptSecretForStorage } from "@/server/security/secret-storage";
+import { normalizeUazapiCredential } from "@/lib/uazapi-credentials";
+
+function isMissingColumnError(err: unknown, columnName: string): boolean {
+  if (!(err instanceof Error)) return false;
+  const message = err.message ?? "";
+  return message.includes(`coluna \"${columnName}\"`) || message.includes(`column \"${columnName}\"`);
+}
+
+function toLegacyCredentialString(input: {
+  apiKey: string | null;
+  token: string | null;
+  adminToken: string | null;
+}): string | null {
+  if (input.apiKey) return input.apiKey;
+  if (input.token && input.adminToken) {
+    return `token=${input.token}&admintoken=${input.adminToken}`;
+  }
+  if (input.token) return input.token;
+  return null;
+}
 
 async function ensureIntegrationRecord(args: {
   tenantId: string;
@@ -41,9 +61,13 @@ export async function createTypebotBot(input: CreateTypebotBotInput) {
       hashWebhookSecret(input.webhookSecret.trim())
     : null;
   const webhookSecretEncrypted =
-    input.webhookSecret?.trim() ? encryptSecret(input.webhookSecret.trim()) : null;
+    input.webhookSecret?.trim()
+      ? encryptSecretForStorage(input.webhookSecret.trim(), "createTypebotBot:webhookSecret")
+      : null;
   const apiTokenEncrypted =
-    input.apiToken?.trim() ? encryptSecret(input.apiToken.trim()) : null;
+    input.apiToken?.trim()
+      ? encryptSecretForStorage(input.apiToken.trim(), "createTypebotBot:apiToken")
+      : null;
   const metricsApiBaseUrl =
     input.metricsApiBaseUrl?.trim() ? input.metricsApiBaseUrl.trim().replace(/\/$/, "") : null;
 
@@ -97,7 +121,9 @@ export async function createEvolutionInstance(input: CreateEvolutionInstanceInpu
   const db = getDb();
   const baseUrl = input.baseUrl.replace(/\/$/, "");
   const apiKeyEncrypted =
-    input.apiKey?.trim() ? encryptSecret(input.apiKey.trim()) : null;
+    input.apiKey?.trim()
+      ? encryptSecretForStorage(input.apiKey.trim(), "createEvolutionInstance:apiKey")
+      : null;
 
   try {
     const [row] = await db
@@ -147,32 +173,95 @@ export interface CreateUazapiInstanceInput {
   externalId: string;
   baseUrl: string;
   apiKey?: string | null;
+  token?: string | null;
+  adminToken?: string | null;
+  legacyCredential?: string | null;
   instanceName?: string | null;
 }
 
 export async function createUazapiInstance(input: CreateUazapiInstanceInput) {
   const db = getDb();
   const baseUrl = input.baseUrl.replace(/\/$/, "");
+  const normalizedCredential = normalizeUazapiCredential({
+    apiKey: input.apiKey ?? null,
+    token: input.token ?? null,
+    adminToken: input.adminToken ?? null,
+    legacyCredential: input.legacyCredential ?? null,
+  });
   const apiKeyEncrypted =
-    input.apiKey?.trim() ? encryptSecret(input.apiKey.trim()) : null;
+    normalizedCredential.apiKey
+      ? encryptSecretForStorage(normalizedCredential.apiKey, "createUazapiInstance:apiKey")
+      : null;
+  const tokenEncrypted =
+    normalizedCredential.token
+      ? encryptSecretForStorage(normalizedCredential.token, "createUazapiInstance:token")
+      : null;
+  const adminTokenEncrypted =
+    normalizedCredential.adminToken
+      ? encryptSecretForStorage(
+          normalizedCredential.adminToken,
+          "createUazapiInstance:adminToken"
+        )
+      : null;
+  const legacyCredential = toLegacyCredentialString({
+    apiKey: normalizedCredential.apiKey,
+    token: normalizedCredential.token,
+    adminToken: normalizedCredential.adminToken,
+  });
+  const legacyCredentialEncrypted = legacyCredential
+    ? encryptSecretForStorage(legacyCredential, "createUazapiInstance:legacyCredential")
+    : null;
 
   try {
-    const [row] = await db
-      .insert(uazapiInstances)
-      .values({
-        tenantId: input.tenantId,
-        externalId: input.externalId.trim(),
-        baseUrl,
-        apiKeyEncrypted,
-        instanceName: input.instanceName?.trim() || null,
-      })
-      .returning({
-        id: uazapiInstances.id,
-        tenantId: uazapiInstances.tenantId,
-        externalId: uazapiInstances.externalId,
-        baseUrl: uazapiInstances.baseUrl,
-        instanceName: uazapiInstances.instanceName,
-      });
+    let row:
+      | {
+          id: string;
+          tenantId: string;
+          externalId: string;
+          baseUrl: string;
+          instanceName: string | null;
+        }
+      | undefined;
+    try {
+      [row] = await db
+        .insert(uazapiInstances)
+        .values({
+          tenantId: input.tenantId,
+          externalId: input.externalId.trim(),
+          baseUrl,
+          apiKeyEncrypted,
+          tokenEncrypted,
+          adminTokenEncrypted,
+          instanceName: input.instanceName?.trim() || null,
+        })
+        .returning({
+          id: uazapiInstances.id,
+          tenantId: uazapiInstances.tenantId,
+          externalId: uazapiInstances.externalId,
+          baseUrl: uazapiInstances.baseUrl,
+          instanceName: uazapiInstances.instanceName,
+        });
+    } catch (insertErr) {
+      if (!isMissingColumnError(insertErr, "token_encrypted")) {
+        throw insertErr;
+      }
+      [row] = await db
+        .insert(uazapiInstances)
+        .values({
+          tenantId: input.tenantId,
+          externalId: input.externalId.trim(),
+          baseUrl,
+          apiKeyEncrypted: legacyCredentialEncrypted,
+          instanceName: input.instanceName?.trim() || null,
+        })
+        .returning({
+          id: uazapiInstances.id,
+          tenantId: uazapiInstances.tenantId,
+          externalId: uazapiInstances.externalId,
+          baseUrl: uazapiInstances.baseUrl,
+          instanceName: uazapiInstances.instanceName,
+        });
+    }
 
     if (!row) {
       return { error: "Falha ao criar instância UAZAPI" };

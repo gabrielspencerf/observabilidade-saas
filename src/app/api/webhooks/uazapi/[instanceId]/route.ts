@@ -9,6 +9,8 @@ import { validateUazapiWebhook } from "@/server/integrations/uazapi/validate";
 import { parseUazapiWebhookBody } from "@/server/integrations/uazapi/parse";
 import { ingestUazapiWebhook } from "@/server/integrations/uazapi/ingest";
 import { checkRateLimit } from "@/server/security/rate-limit";
+import { setDbAccessContext } from "@/server/db/access-context";
+import { checkWebhookReplay } from "@/server/security/webhook-replay";
 
 const MAX_BODY_SIZE = 512 * 1024; // 512 KB
 
@@ -78,12 +80,29 @@ export async function POST(
     );
   }
 
+  await setDbAccessContext({
+    tenantId: context.tenantId,
+    bypassRls: false,
+  });
+
   const parsed = parseUazapiWebhookBody(body);
   if ("error" in parsed) {
     return NextResponse.json(
       { error: parsed.error },
       { status: 400 }
     );
+  }
+
+  const replay = await checkWebhookReplay({
+    provider: "uazapi",
+    resourceId: context.uazapiInstanceId,
+    externalEventId: parsed.externalEventId,
+    timestampHeader: request.headers.get("x-webhook-timestamp"),
+    signatureHeader: request.headers.get("x-webhook-signature"),
+    rawBody,
+  });
+  if (!replay.ok) {
+    return NextResponse.json({ error: "Webhook replay detectado" }, { status: 409 });
   }
 
   const result = await ingestUazapiWebhook({

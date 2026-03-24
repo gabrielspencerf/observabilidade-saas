@@ -11,6 +11,7 @@ interface TenantData {
   name: string;
   slug: string;
   isActive: boolean;
+  settings?: Record<string, unknown> | null;
 }
 
 export default function EditTenantPage() {
@@ -24,6 +25,13 @@ export default function EditTenantPage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [loading, setLoading] = useState(true);
+  const [settings, setSettings] = useState<Record<string, unknown>>({});
+  const [agentEnabledOverride, setAgentEnabledOverride] = useState(false);
+  const [agentEnabled, setAgentEnabled] = useState(true);
+  const [agentModel, setAgentModel] = useState("");
+  const [agentPrompt, setAgentPrompt] = useState("");
+  const [agentApiKey, setAgentApiKey] = useState("");
+  const [followupRulesJson, setFollowupRulesJson] = useState("[]");
 
   useEffect(() => {
     async function load() {
@@ -42,6 +50,33 @@ export default function EditTenantPage() {
       setName(data.name ?? "");
       setSlug(data.slug ?? "");
       setIsActive(data.isActive ?? true);
+      const loadedSettings =
+        data.settings && typeof data.settings === "object"
+          ? (data.settings as Record<string, unknown>)
+          : {};
+      setSettings(loadedSettings);
+      if (typeof loadedSettings.openai_agent_enabled === "boolean") {
+        setAgentEnabledOverride(true);
+        setAgentEnabled(loadedSettings.openai_agent_enabled);
+      }
+      setAgentModel(
+        typeof loadedSettings.openai_agent_model === "string"
+          ? loadedSettings.openai_agent_model
+          : ""
+      );
+      setAgentPrompt(
+        typeof loadedSettings.openai_agent_system_prompt === "string"
+          ? loadedSettings.openai_agent_system_prompt
+          : ""
+      );
+      setAgentApiKey(
+        typeof loadedSettings.openai_agent_api_key === "string"
+          ? loadedSettings.openai_agent_api_key
+          : ""
+      );
+      setFollowupRulesJson(
+        JSON.stringify(loadedSettings.openai_agent_followup_rules ?? [], null, 2)
+      );
       setLoading(false);
     }
     load();
@@ -52,6 +87,37 @@ export default function EditTenantPage() {
     setError(null);
     setSubmitting(true);
     try {
+      let parsedFollowupRules: unknown = [];
+      try {
+        parsedFollowupRules = JSON.parse(followupRulesJson || "[]");
+      } catch {
+        setError("JSON de regras de follow-up inválido.");
+        setSubmitting(false);
+        return;
+      }
+
+      const nextSettings: Record<string, unknown> = { ...settings };
+      if (agentEnabledOverride) {
+        nextSettings.openai_agent_enabled = agentEnabled;
+      } else {
+        delete nextSettings.openai_agent_enabled;
+      }
+
+      if (agentModel.trim()) nextSettings.openai_agent_model = agentModel.trim();
+      else delete nextSettings.openai_agent_model;
+
+      if (agentPrompt.trim()) nextSettings.openai_agent_system_prompt = agentPrompt.trim();
+      else delete nextSettings.openai_agent_system_prompt;
+
+      if (Array.isArray(parsedFollowupRules)) {
+        nextSettings.openai_agent_followup_rules = parsedFollowupRules;
+      } else {
+        delete nextSettings.openai_agent_followup_rules;
+      }
+
+      if (agentApiKey.trim()) nextSettings.openai_agent_api_key = agentApiKey.trim();
+      else delete nextSettings.openai_agent_api_key;
+
       const res = await fetch(`/api/admin/tenants/${id}`, {
         method: "PATCH",
         headers: { "Content-Type": "application/json" },
@@ -59,6 +125,7 @@ export default function EditTenantPage() {
           name: name.trim(),
           slug: slug.trim(),
           is_active: isActive,
+          settings: nextSettings,
         }),
       });
       const data = await res.json().catch(() => ({}));
@@ -150,6 +217,87 @@ export default function EditTenantPage() {
           <label htmlFor="is_active" className="text-sm text-brand-text">
             Ativo
           </label>
+        </div>
+        <div className="space-y-2 rounded-xl border border-brand-border bg-brand-surface/40 p-4">
+          <h2 className="text-sm font-semibold uppercase tracking-wide text-brand-neon">
+            Override do agente IA
+          </h2>
+          <div className="flex items-center gap-2">
+            <input
+              id="agent_enabled_override"
+              type="checkbox"
+              checked={agentEnabledOverride}
+              onChange={(e) => setAgentEnabledOverride(e.target.checked)}
+              className="rounded border-brand-border bg-brand-surface text-brand-neon focus:ring-brand-neon"
+            />
+            <label htmlFor="agent_enabled_override" className="text-sm text-brand-text">
+              Definir habilitação do agente neste tenant
+            </label>
+          </div>
+          {agentEnabledOverride && (
+            <div className="flex items-center gap-2">
+              <input
+                id="agent_enabled"
+                type="checkbox"
+                checked={agentEnabled}
+                onChange={(e) => setAgentEnabled(e.target.checked)}
+                className="rounded border-brand-border bg-brand-surface text-brand-neon focus:ring-brand-neon"
+              />
+              <label htmlFor="agent_enabled" className="text-sm text-brand-text">
+                Agente habilitado para este tenant
+              </label>
+            </div>
+          )}
+          <div className="space-y-2">
+            <label htmlFor="agent_model" className="block text-sm font-medium text-brand-text">
+              Modelo OpenAI (override)
+            </label>
+            <Input
+              id="agent_model"
+              type="text"
+              value={agentModel}
+              onChange={(e) => setAgentModel(e.target.value)}
+              className="w-full bg-brand-surface border-brand-border text-brand-text"
+              placeholder="gpt-4o-mini"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="agent_api_key" className="block text-sm font-medium text-brand-text">
+              API Key OpenAI (override)
+            </label>
+            <Input
+              id="agent_api_key"
+              type="password"
+              value={agentApiKey}
+              onChange={(e) => setAgentApiKey(e.target.value)}
+              className="w-full bg-brand-surface border-brand-border text-brand-text"
+              placeholder="sk-..."
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="agent_prompt" className="block text-sm font-medium text-brand-text">
+              Prompt do agente (override)
+            </label>
+            <textarea
+              id="agent_prompt"
+              value={agentPrompt}
+              onChange={(e) => setAgentPrompt(e.target.value)}
+              rows={5}
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-sm text-brand-text"
+            />
+          </div>
+          <div className="space-y-2">
+            <label htmlFor="followup_rules" className="block text-sm font-medium text-brand-text">
+              Regras de follow-up (JSON override)
+            </label>
+            <textarea
+              id="followup_rules"
+              value={followupRulesJson}
+              onChange={(e) => setFollowupRulesJson(e.target.value)}
+              rows={6}
+              className="w-full rounded-xl border border-brand-border bg-brand-surface px-3 py-2 text-xs font-mono text-brand-text"
+            />
+          </div>
         </div>
         <div className="flex gap-3 pt-4">
           <Button

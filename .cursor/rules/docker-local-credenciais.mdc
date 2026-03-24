@@ -1,0 +1,17 @@
+---
+description: Docker stack YML é apenas local — nunca versionar ou subir no GitHub
+alwaysApply: true
+---
+
+# Docker stack: uso apenas local, nunca público
+
+## Regra obrigatória
+
+- **Arquivos de stack Docker** que contenham credenciais, chaves de API ou segredos (ex.: `docker-stack.swarm.yml`, `docker-stack.swarm.app-only.yml`, ou qualquer YML que o usuário use para deploy local com suas credenciais) são **exclusivamente para uso local**.
+- **Nunca** commitar, dar push ou subir esses arquivos para o **GitHub público** (nem para repositórios privados sem necessidade).
+- Eles devem permanecer no `.gitignore`; se o usuário criar um novo YML desse tipo, adicionar ao `.gitignore` e **nunca** incluí-lo em commits ou sugerir que seja versionado.
+
+## Ao editar ou criar conteúdo
+
+- Se for preciso referenciar configuração de stack (ex.: documentação), usar apenas **templates/exemplos** sem credenciais reais (placeholders como `TROCAR_*`, variáveis de ambiente ou referência a `stack.env`).
+- Não sugerir remover do `.gitignore` nenhum arquivo de stack Docker que possa conter segredos.

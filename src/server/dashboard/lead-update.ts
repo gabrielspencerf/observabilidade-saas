@@ -5,6 +5,13 @@
 import { and, eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { leads } from "@/db/schema";
+import { notifyTenantUsers } from "@/server/notifications/internal";
+import {
+  completeFollowupTasksForLead,
+  ensureFollowupTaskForLead,
+} from "@/server/followup/engine";
+import { enqueueDueFollowupsForTenant } from "@/server/followup/enqueue-due-followups";
+import { writeAuditLog } from "@/server/audit/log";
 
 const LEAD_STATUSES = [
   "new",
@@ -33,6 +40,7 @@ export interface UpdateLeadInput {
   email?: string | null;
   phone?: string | null;
   status?: (typeof LEAD_STATUSES)[number];
+  actorUserId?: string | null;
 }
 
 /**
@@ -47,7 +55,13 @@ export async function updateLeadForTenant(
   const db = getDb();
 
   const [existing] = await db
-    .select({ id: leads.id })
+    .select({
+      id: leads.id,
+      status: leads.status,
+      funnelId: leads.funnelId,
+      name: leads.name,
+      email: leads.email,
+    })
     .from(leads)
     .where(and(eq(leads.tenantId, tenantId), eq(leads.id, leadId)))
     .limit(1);
@@ -90,6 +104,50 @@ export async function updateLeadForTenant(
       .update(leads)
       .set(updates)
       .where(and(eq(leads.tenantId, tenantId), eq(leads.id, leadId)));
+
+    await writeAuditLog({
+      tenantId,
+      userId: input.actorUserId ?? null,
+      action: "update",
+      resourceType: "lead",
+      resourceId: leadId,
+      oldValues: {
+        status: existing.status,
+      },
+      newValues: updates,
+    });
+
+    if (updates.status && updates.status !== existing.status) {
+      await notifyTenantUsers(tenantId, {
+        type: "lead_status_changed",
+        title: "Status de lead atualizado",
+        message: `Lead ${existing.name ?? existing.email ?? leadId} mudou de ${existing.status} para ${updates.status}.`,
+        resourceType: "lead",
+        resourceId: leadId,
+        metadata: {
+          oldStatus: existing.status,
+          newStatus: updates.status,
+        },
+      });
+      if (
+        updates.status === "converted" ||
+        updates.status === "lost" ||
+        updates.status === "duplicate" ||
+        updates.status === "bad_lead"
+      ) {
+        await completeFollowupTasksForLead(tenantId, leadId, "completed");
+      } else {
+        await ensureFollowupTaskForLead({
+          tenantId,
+          leadId,
+          funnelId: existing.funnelId,
+          reason: "status_changed",
+          currentStatus: updates.status,
+        });
+      }
+    }
+
+    await enqueueDueFollowupsForTenant(tenantId);
     return { ok: true };
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);

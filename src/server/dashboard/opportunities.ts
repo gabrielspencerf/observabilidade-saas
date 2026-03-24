@@ -4,7 +4,12 @@
 
 import { and, desc, eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
-import { opportunities } from "@/db/schema";
+import { aiClassifications, opportunities } from "@/db/schema";
+import {
+  extractAiInsightFromEvidences,
+  type ConversationAiInsight,
+} from "@/server/ai/commercial-agent";
+import { writeAuditLog } from "@/server/audit/log";
 
 export interface OpportunityRow {
   id: string;
@@ -17,6 +22,7 @@ export interface OpportunityRow {
   contactStartedAt: Date | null;
   contractedModel: string | null;
   jobValue: string | null;
+  aiInsight: ConversationAiInsight | null;
   createdAt: Date;
   updatedAt: Date;
 }
@@ -27,6 +33,7 @@ export interface UpdateOpportunityInput {
   contactStartedAt?: string | null; // ISO date
   contractedModel?: string | null;
   jobValue?: string | null; // decimal string
+  actorUserId?: string | null;
 }
 
 export async function listOpportunitiesForTenant(
@@ -55,6 +62,7 @@ export async function listOpportunitiesForTenant(
     contactStartedAt: r.contactStartedAt,
     contractedModel: r.contractedModel,
     jobValue: r.jobValue,
+    aiInsight: null,
     createdAt: r.createdAt,
     updatedAt: r.updatedAt,
   }));
@@ -76,6 +84,26 @@ export async function getOpportunityForTenant(
     )
     .limit(1);
   if (!row) return null;
+  const [classification] =
+    row.conversationId
+      ? await db
+          .select({
+            summary: aiClassifications.summary,
+            classificationType: aiClassifications.classificationType,
+            confidenceScore: aiClassifications.confidenceScore,
+            evidences: aiClassifications.evidences,
+          })
+          .from(aiClassifications)
+          .where(
+            and(
+              eq(aiClassifications.tenantId, tenantId),
+              eq(aiClassifications.conversationId, row.conversationId),
+              eq(aiClassifications.isCurrent, true)
+            )
+          )
+          .orderBy(desc(aiClassifications.processedAt))
+          .limit(1)
+      : [null];
   return {
     id: row.id,
     tenantId: row.tenantId,
@@ -87,6 +115,14 @@ export async function getOpportunityForTenant(
     contactStartedAt: row.contactStartedAt,
     contractedModel: row.contractedModel,
     jobValue: row.jobValue,
+    aiInsight: classification
+      ? extractAiInsightFromEvidences({
+          summary: classification.summary,
+          classificationType: classification.classificationType,
+          confidenceScore: classification.confidenceScore,
+          evidences: (classification.evidences as Record<string, unknown> | null) ?? null,
+        })
+      : null,
     createdAt: row.createdAt,
     updatedAt: row.updatedAt,
   };
@@ -99,7 +135,7 @@ export async function updateOpportunityForTenant(
 ): Promise<{ ok: true } | { ok: false; error: "not_found" }> {
   const db = getDb();
   const [existing] = await db
-    .select({ id: opportunities.id })
+    .select({ id: opportunities.id, stage: opportunities.stage })
     .from(opportunities)
     .where(
       and(
@@ -132,5 +168,14 @@ export async function updateOpportunityForTenant(
         eq(opportunities.id, opportunityId)
       )
     );
+  await writeAuditLog({
+    tenantId,
+    userId: input.actorUserId ?? null,
+    action: "update",
+    resourceType: "opportunity",
+    resourceId: opportunityId,
+    oldValues: { stage: existing.stage },
+    newValues: updates,
+  });
   return { ok: true };
 }

@@ -5,6 +5,7 @@ import {
 } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
+import { DashboardPageHeader } from "@/components/layout";
 import { StatsRow } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { AddProductForm } from "./add-product-form";
@@ -33,10 +34,13 @@ export default async function DashboardProductsPage() {
 
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-brand-text">Produtos e valor de ticket</h1>
-        <AddProductForm />
-      </div>
+      <DashboardPageHeader
+        title="Produtos e valor de ticket"
+        description="Catálogo de produtos/serviços para cálculo de ticket e receita recorrente."
+        icon={Package}
+        badges={[`${products.length} itens`]}
+        actions={<AddProductForm />}
+      />
 
       {products.length > 0 && mrrData.mrr > 0 && (
         <div className="mb-6">

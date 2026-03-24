@@ -10,6 +10,9 @@ import {
   conversations,
   googleAdsAccounts,
   campaignSnapshots,
+  integrations,
+  evolutionInstances,
+  uazapiInstances,
 } from "@/db/schema";
 import { listLeadsForTenant } from "./leads";
 import { listConversationsForTenant } from "./conversations";
@@ -49,11 +52,29 @@ export interface LeadsByDayRow {
   date: string;
 }
 
+/** Um dia no calendário mensal da home (mês atual). */
+export interface CalendarLeadsByDayRow {
+  date: string;
+  leads: number;
+}
+
 /** Uma semana na série "gasto em ads" (últimas 4 semanas). */
 export interface AdsSpendByWeekRow {
   name: string;
   gasto: number;
   cliques: number;
+}
+
+export interface LeadsByAccountRow {
+  provider: string;
+  accountDisplay: string;
+  totalLeads: number;
+}
+
+export interface ConversationsByAccountRow {
+  provider: string;
+  accountDisplay: string;
+  totalConversations: number;
 }
 
 export interface AnalyticsSummary {
@@ -67,8 +88,14 @@ export interface AnalyticsSummary {
   recentConversations: ConversationRow[];
   /** Leads por dia (últimos 7 dias) para o gráfico da home. */
   leadsByDay: LeadsByDayRow[];
+  /** Leads por dia do mês atual para o calendário da home. */
+  calendarLeadsByDay: CalendarLeadsByDayRow[];
   /** Gasto por semana (últimas 4 semanas) para o gráfico da home. */
   adsSpendByWeek: AdsSpendByWeekRow[];
+  /** Totais de leads agrupados por conta/origem de integração. */
+  leadsByAccount: LeadsByAccountRow[];
+  /** Totais de conversas agrupados por conta (Evolution/UAZAPI). */
+  conversationsByAccount: ConversationsByAccountRow[];
 }
 
 function clampPeriodDays(days: number): number {
@@ -143,6 +170,45 @@ async function getLeadsByDayLast7(tenantId: string): Promise<AnalyticsSummary["l
 }
 
 /**
+ * Contagem de novos leads por dia no mês atual (UTC).
+ * Mantém dias sem registros com zero para facilitar renderização do calendário.
+ */
+async function getCalendarLeadsByDayCurrentMonth(
+  tenantId: string
+): Promise<AnalyticsSummary["calendarLeadsByDay"]> {
+  const db = getDb();
+  const now = new Date();
+  const year = now.getUTCFullYear();
+  const month = now.getUTCMonth();
+  const monthStart = new Date(Date.UTC(year, month, 1));
+  const nextMonthStart = new Date(Date.UTC(year, month + 1, 1));
+
+  const result = await db.execute<{ d: string; c: string }>(sql`
+    SELECT (first_seen_at AT TIME ZONE 'UTC')::date AS d, count(*)::text AS c
+    FROM leads
+    WHERE tenant_id = ${tenantId}
+      AND first_seen_at >= ${monthStart.toISOString()}
+      AND first_seen_at < ${nextMonthStart.toISOString()}
+    GROUP BY (first_seen_at AT TIME ZONE 'UTC')::date
+    ORDER BY d
+  `);
+  const rows = Array.isArray(result) ? result : (result as { rows?: typeof result }).rows ?? [];
+  const byDate = new Map<string, number>();
+  for (const r of rows) byDate.set(r.d, Number(r.c));
+
+  const out: AnalyticsSummary["calendarLeadsByDay"] = [];
+  for (
+    const d = new Date(monthStart);
+    d < nextMonthStart;
+    d.setUTCDate(d.getUTCDate() + 1)
+  ) {
+    const dateStr = d.toISOString().slice(0, 10);
+    out.push({ date: dateStr, leads: byDate.get(dateStr) ?? 0 });
+  }
+  return out;
+}
+
+/**
  * Gasto em ads por semana (últimas 4 semanas). Usado no gráfico da home.
  */
 async function getAdsSpendByWeekLast4(tenantId: string): Promise<AnalyticsSummary["adsSpendByWeek"]> {
@@ -170,6 +236,78 @@ async function getAdsSpendByWeekLast4(tenantId: string): Promise<AnalyticsSummar
     out[i] = { name: `Semana ${i + 1}`, gasto: Number(r.spend), cliques: Number(r.clicks) };
   });
   return out;
+}
+
+/**
+ * Total de leads por conta/origem.
+ * Usa integrations.name quando source_integration_id estiver disponível.
+ */
+async function getLeadsByAccount(tenantId: string): Promise<AnalyticsSummary["leadsByAccount"]> {
+  const db = getDb();
+  const result = await db.execute<{
+    provider: string;
+    account_display: string;
+    total_leads: string;
+  }>(sql`
+    SELECT
+      coalesce(i.provider::text, l.source_provider::text, 'manual') AS provider,
+      coalesce(i.name, l.source_provider::text, 'Sem origem') AS account_display,
+      count(*)::text AS total_leads
+    FROM leads l
+    LEFT JOIN integrations i
+      ON i.id = l.source_integration_id
+    WHERE l.tenant_id = ${tenantId}
+    GROUP BY 1, 2
+    ORDER BY count(*) DESC, 2 ASC
+    LIMIT 12
+  `);
+  const rows = Array.isArray(result) ? result : (result as { rows?: typeof result }).rows ?? [];
+  return rows.map((r) => ({
+    provider: r.provider,
+    accountDisplay: r.account_display,
+    totalLeads: Number(r.total_leads),
+  }));
+}
+
+/**
+ * Total de conversas por conta de mensageria (Evolution/UAZAPI).
+ */
+async function getConversationsByAccount(
+  tenantId: string
+): Promise<AnalyticsSummary["conversationsByAccount"]> {
+  const db = getDb();
+  const result = await db.execute<{
+    provider: string;
+    account_display: string;
+    total_conversations: string;
+  }>(sql`
+    SELECT
+      CASE
+        WHEN c.evolution_instance_id IS NOT NULL THEN 'evolution'
+        WHEN c.uazapi_instance_id IS NOT NULL THEN 'uazapi'
+        ELSE 'unknown'
+      END AS provider,
+      CASE
+        WHEN c.evolution_instance_id IS NOT NULL THEN coalesce(ei.instance_name, ei.external_id, 'Evolution sem nome')
+        WHEN c.uazapi_instance_id IS NOT NULL THEN coalesce(ui.instance_name, ui.external_id, 'UAZAPI sem nome')
+        ELSE 'Sem conta'
+      END AS account_display,
+      count(*)::text AS total_conversations
+    FROM conversations c
+    LEFT JOIN evolution_instances ei ON ei.id = c.evolution_instance_id
+    LEFT JOIN uazapi_instances ui ON ui.id = c.uazapi_instance_id
+    WHERE c.tenant_id = ${tenantId}
+    GROUP BY 1, 2
+    ORDER BY count(*) DESC, 2 ASC
+    LIMIT 12
+  `);
+
+  const rows = Array.isArray(result) ? result : (result as { rows?: typeof result }).rows ?? [];
+  return rows.map((r) => ({
+    provider: r.provider,
+    accountDisplay: r.account_display,
+    totalConversations: Number(r.total_conversations),
+  }));
 }
 
 /**
@@ -236,7 +374,10 @@ export async function getAnalyticsSummaryForTenant(
     recentLeads,
     recentConversations,
     leadsByDay,
+    calendarLeadsByDay,
     adsSpendByWeek,
+    leadsByAccount,
+    conversationsByAccount,
   ] = await Promise.all([
     db
       .select({ value: sql<number>`count(*)::int` })
@@ -255,7 +396,10 @@ export async function getAnalyticsSummaryForTenant(
     listLeadsForTenant(tenantId, { limit: RECENT_LEADS_LIMIT }),
     listConversationsForTenant(tenantId, { limit: RECENT_CONVERSATIONS_LIMIT }),
     getLeadsByDayLast7(tenantId),
+    getCalendarLeadsByDayCurrentMonth(tenantId),
     getAdsSpendByWeekLast4(tenantId),
+    getLeadsByAccount(tenantId),
+    getConversationsByAccount(tenantId),
   ]);
 
   const totalLeads = totalLeadsResult[0]?.value ?? 0;
@@ -272,6 +416,9 @@ export async function getAnalyticsSummaryForTenant(
     recentLeads,
     recentConversations,
     leadsByDay,
+    calendarLeadsByDay,
     adsSpendByWeek,
+    leadsByAccount,
+    conversationsByAccount,
   };
 }

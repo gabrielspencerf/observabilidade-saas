@@ -3,7 +3,9 @@
  * PATCH /api/dashboard/pagespeed/landing-url — define URL (body: { url: string | null }).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth";
+import { requireDashboardApiAuth } from "@/server/dashboard/api-auth";
+import { dashboardApiAuthErrorResponse } from "@/server/dashboard/api-route-errors";
+import { PERMISSION_SLUGS } from "@/server/rbac";
 import {
   getLandingPageUrlForTenant,
   setLandingPageUrlForTenant,
@@ -12,22 +14,12 @@ import {
 export async function GET(request: NextRequest) {
   let session;
   try {
-    session = await requireAuth(request);
+    session = await requireDashboardApiAuth(request, PERMISSION_SLUGS.DASHBOARD_READ);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return dashboardApiAuthErrorResponse(err);
   }
 
-  const tenantId = session.session.currentTenantId;
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Tenant não selecionado" },
-      { status: 400 }
-    );
-  }
+  const tenantId = session.session.currentTenantId!;
 
   const url = await getLandingPageUrlForTenant(tenantId);
   return NextResponse.json({ url });
@@ -36,22 +28,12 @@ export async function GET(request: NextRequest) {
 export async function PATCH(request: NextRequest) {
   let session;
   try {
-    session = await requireAuth(request);
+    session = await requireDashboardApiAuth(request, PERMISSION_SLUGS.LEADS_WRITE);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return dashboardApiAuthErrorResponse(err);
   }
 
-  const tenantId = session.session.currentTenantId;
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Tenant não selecionado" },
-      { status: 400 }
-    );
-  }
+  const tenantId = session.session.currentTenantId!;
 
   let body: Record<string, unknown>;
   try {

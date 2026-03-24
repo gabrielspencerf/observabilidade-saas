@@ -161,9 +161,24 @@ SEED_ADMIN_EMAIL=admin@seudominio.com
 NODE_ENV=production
 NEXT_PUBLIC_APP_URL=https://seudominio.com
 
+# Segurança (rollout)
+SECURITY_ENFORCE_RLS=false
+SECURITY_ENFORCE_CSRF=false
+SECURITY_STRICT_REDIRECTS=true
+SECURITY_ALLOW_PLAINTEXT_SECRETS=false
+
+# Rate limit atrás de proxy (Traefik/Nginx)
+RATE_LIMIT_TRUSTED_PROXY_HOPS=1
+
 # Se for cadastrar Evolution/UAZAPI/Typebot com API key ou token
 INTEGRATIONS_ENCRYPTION_KEY=<32-bytes-hex-ou-base64>
 ```
+
+### Proxy e IP confiável
+
+- Se `RATE_LIMIT_TRUSTED_PROXY_HOPS > 0`, a app usa `X-Forwarded-For` para compor chave de rate-limit.
+- Garanta que o proxy **sempre sobrescreve** `X-Forwarded-For` e `X-Real-IP` (não confiar em header vindo direto da internet).
+- Em rollout inicial, mantenha `RATE_LIMIT_TRUSTED_PROXY_HOPS=0` até validar cabeçalhos em produção.
 
 ---
 
@@ -194,4 +209,4 @@ O documento `docs/SETUP_BOOTSTRAP_ARCHITECTURE.md` descreve uma **proposta** de 
 7. [ ] Testar: `GET https://seu-dominio.com/api/health` (esperado: `db`, `redis`, `worker` ok).
 8. [ ] Login em `/admin-login` com o email/senha do seed; cadastrar Evolution em Admin → Integrações.
 
-Referência completa de variáveis e credenciais: `.env.example` e `docs/CONFIG_CREDENTIALS.md`. Passo a passo local: `docs/GETTING_STARTED.md`. **Deploy com Docker e Portainer:** `docs/DOCKER_PORTAINER.md`.
+Referência completa de variáveis e credenciais: `.env.example` e `docs/CONFIG_CREDENTIALS.md`. Passo a passo local: `docs/GETTING_STARTED.md`. **Deploy com Docker e Portainer:** `docs/DOCKER_PORTAINER.md`. Checklist de segurança: `docs/SECURITY_ACCEPTANCE_CHECKLIST.md`.

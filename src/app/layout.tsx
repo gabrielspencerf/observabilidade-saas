@@ -1,12 +1,40 @@
 import type { Metadata } from "next";
 import Script from "next/script";
 import "./globals.css";
-import { ThemeToggle } from "@/components/theme-toggle";
 import { ThemeProvider } from "@/components/theme-provider";
+import { SEO_APP_NAME, SEO_DEFAULT_DESCRIPTION, getAppBaseUrl } from "./seo";
+import { CsrfFetchBootstrap } from "@/components/security/csrf-fetch-bootstrap";
 
 export const metadata: Metadata = {
-  title: "Acesso do Cliente | Creative Lane",
-  description: "Acesso do Cliente — Creative Lane LTDA. Portal do cliente para observabilidade e gestão.",
+  metadataBase: getAppBaseUrl(),
+  title: {
+    default: SEO_APP_NAME,
+    template: "%s | Vysen",
+  },
+  description: SEO_DEFAULT_DESCRIPTION,
+  applicationName: SEO_APP_NAME,
+  alternates: {
+    canonical: "/",
+  },
+  manifest: "/manifest.webmanifest",
+  icons: {
+    icon: [{ url: "/icon", type: "image/png" }],
+    apple: [{ url: "/apple-icon", sizes: "180x180", type: "image/png" }],
+    shortcut: ["/icon"],
+  },
+  openGraph: {
+    type: "website",
+    locale: "pt_BR",
+    siteName: SEO_APP_NAME,
+    title: SEO_APP_NAME,
+    description: SEO_DEFAULT_DESCRIPTION,
+    url: "/",
+  },
+  twitter: {
+    card: "summary_large_image",
+    title: SEO_APP_NAME,
+    description: SEO_DEFAULT_DESCRIPTION,
+  },
 };
 
 export default function RootLayout({
@@ -51,6 +79,7 @@ export default function RootLayout({
           defaultTheme="dark"
           enableSystem={false}
         >
+          <CsrfFetchBootstrap />
           {children}
         </ThemeProvider>
       </body>

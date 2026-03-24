@@ -36,6 +36,111 @@
       "when": 1773772840471,
       "tag": "0004_married_wasp",
       "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "7",
+      "when": 1773772840472,
+      "tag": "0004_uazapi_webhook_and_conversations",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "7",
+      "when": 1773772840473,
+      "tag": "0005_contacts_opportunities_user_profiles",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "7",
+      "when": 1773772840474,
+      "tag": "0006_negocio_produtos_onboarding_pagespeed_reclamacoes",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "7",
+      "when": 1773772840475,
+      "tag": "0007_pagespeed_metric_date_products_billing_mrr",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "7",
+      "when": 1773772840476,
+      "tag": "0008_seed_onboarding_steps",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "7",
+      "when": 1773772840477,
+      "tag": "0009_add_conversations_uazapi_instance_id",
+      "breakpoints": true
+    },
+    {
+      "idx": 11,
+      "version": "7",
+      "when": 1773772840478,
+      "tag": "0010_conversation_messages_sent_by_bot",
+      "breakpoints": true
+    },
+    {
+      "idx": 12,
+      "version": "7",
+      "when": 1773772840479,
+      "tag": "0011_auth_password_reset_tokens",
+      "breakpoints": true
+    },
+    {
+      "idx": 13,
+      "version": "7",
+      "when": 1773772840480,
+      "tag": "0012_uazapi_structured_credentials",
+      "breakpoints": true
+    },
+    {
+      "idx": 14,
+      "version": "7",
+      "when": 1773772840481,
+      "tag": "0013_agent_notifications_followups",
+      "breakpoints": true
+    },
+    {
+      "idx": 15,
+      "version": "7",
+      "when": 1773979200000,
+      "tag": "0014_vysen_knowledge_pgvector",
+      "breakpoints": true
+    },
+    {
+      "idx": 16,
+      "version": "7",
+      "when": 1773982800000,
+      "tag": "0015_vysen_usage_events",
+      "breakpoints": true
+    },
+    {
+      "idx": 17,
+      "version": "7",
+      "when": 1774998000000,
+      "tag": "0016_security_rls_tenant_policies",
+      "breakpoints": true
+    },
+    {
+      "idx": 18,
+      "version": "7",
+      "when": 1774998600000,
+      "tag": "0017_tenant_role_permissions",
+      "breakpoints": true
+    },
+    {
+      "idx": 19,
+      "version": "7",
+      "when": 1775100000000,
+      "tag": "0018_meta_ads_and_clarity",
+      "breakpoints": true
     }
   ]
 }

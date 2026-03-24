@@ -3,7 +3,9 @@
  * Requer PAGESPEED_API_KEY no .env.
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth";
+import { requireDashboardApiAuth } from "@/server/dashboard/api-auth";
+import { dashboardApiAuthErrorResponse } from "@/server/dashboard/api-route-errors";
+import { PERMISSION_SLUGS } from "@/server/rbac";
 import {
   getLandingPageUrlForTenant,
   savePageSpeedResult,
@@ -26,22 +28,12 @@ async function runPageSpeed(url: string, strategy: "mobile" | "desktop"): Promis
 export async function POST(request: NextRequest) {
   let session;
   try {
-    session = await requireAuth(request);
+    session = await requireDashboardApiAuth(request, PERMISSION_SLUGS.LEADS_WRITE);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return dashboardApiAuthErrorResponse(err);
   }
 
-  const tenantId = session.session.currentTenantId;
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Tenant não selecionado" },
-      { status: 400 }
-    );
-  }
+  const tenantId = session.session.currentTenantId!;
 
   if (!API_KEY) {
     return NextResponse.json(
@@ -53,7 +45,7 @@ export async function POST(request: NextRequest) {
   const landingUrl = await getLandingPageUrlForTenant(tenantId);
   if (!landingUrl) {
     return NextResponse.json(
-      { error: "Configure a URL da landing na página PageSpeed." },
+      { error: "Configure a URL da landing na area Google Ads (secao PageSpeed)." },
       { status: 400 }
     );
   }

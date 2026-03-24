@@ -1,8 +1,10 @@
 import Link from "next/link";
 import { redirect } from "next/navigation";
+import { cookies } from "next/headers";
 import { getDashboardTenantContext } from "@/server/dashboard";
 import { loadPendingConnection } from "@/server/google-ads-pending";
 import { env } from "@/config/env";
+import { getCsrfCookieName } from "@/server/security/csrf";
 
 export default async function GoogleAdsConnectPage({
   searchParams,
@@ -31,6 +33,8 @@ export default async function GoogleAdsConnectPage({
   }
 
   const { customerIds } = pending;
+  const csrfToken =
+    (await cookies()).get(getCsrfCookieName())?.value ?? "";
 
   return (
     <div className="px-1 py-0 sm:px-2">
@@ -47,6 +51,7 @@ export default async function GoogleAdsConnectPage({
         method="POST"
         className="panel-lux mt-6 max-w-md rounded-lg border border-brand-border bg-brand-surface p-4"
       >
+        <input type="hidden" name="csrf_token" value={csrfToken} />
         <input
           type="hidden"
           name="pending"

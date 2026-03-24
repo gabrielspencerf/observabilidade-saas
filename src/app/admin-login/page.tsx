@@ -5,18 +5,36 @@
  * Após login, redireciona para /admin só se o usuário for super_admin.
  */
 
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 import { ArrowRight, Lock, ShieldAlert } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
 
 export default function AdminLoginPage() {
   const router = useRouter();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const googleEnabled = process.env.NEXT_PUBLIC_AUTH_GOOGLE_LOGIN_ENABLED === "true";
+  const rememberEnabled = process.env.NEXT_PUBLIC_AUTH_REMEMBER_ME_ENABLED === "true";
+  const [oauthError, setOauthError] = useState<string | null>(null);
+  const oauthErrorMessage =
+    oauthError === "google_forbidden"
+      ? "Sua conta Google não é super admin."
+      : oauthError === "google_invite_only"
+        ? "Sua conta Google não está cadastrada na plataforma."
+        : oauthError
+          ? "Falha no login Google."
+          : null;
+
+  useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    setOauthError(params.get("error"));
+  }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -26,7 +44,7 @@ export default function AdminLoginPage() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember_me: rememberMe }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
@@ -60,10 +78,7 @@ export default function AdminLoginPage() {
         <div className="bg-brand-surface p-8 rounded-[24px] shadow-soft-lg animate-fade-in border border-brand-border/60 relative overflow-hidden">
 
           <div className="flex flex-col items-center mb-8">
-            <div className="h-16 w-16 rounded-xl bg-brand-surface border border-red-500/30 flex items-center justify-center mb-4 shadow-inner relative group">
-              <div className="absolute inset-0 bg-red-500/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <ShieldAlert className="h-8 w-8 text-red-500 relative z-10" />
-            </div>
+            <BrandMark size="lg" className="mb-4" />
             <h1 className="text-2xl font-bold text-brand-text tracking-tight font-display">
               Acesso Restrito
             </h1>
@@ -80,6 +95,11 @@ export default function AdminLoginPage() {
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
                 {error}
+              </div>
+            )}
+            {oauthErrorMessage && !error && (
+              <div className="rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-400 border border-amber-500/20">
+                {oauthErrorMessage}
               </div>
             )}
             <div className="space-y-1.5 relative">
@@ -100,7 +120,7 @@ export default function AdminLoginPage() {
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
                   required
-                  placeholder="admin@creativelane.com.br"
+                  placeholder="admin@vysen.com.br"
                   className="pl-10 bg-brand-dark/50 border-brand-border/60 focus:bg-brand-surface focus:border-red-500/50 focus:ring-red-500/30 transition-all"
                 />
               </div>
@@ -128,6 +148,17 @@ export default function AdminLoginPage() {
                 />
               </div>
             </div>
+            {rememberEnabled && (
+              <label className="flex items-center gap-2 text-sm text-brand-muted">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-brand-border bg-brand-surface text-brand-neon focus:ring-brand-neon"
+                />
+                Lembrar de mim neste dispositivo
+              </label>
+            )}
             <Button 
               type="submit" 
               disabled={loading} 
@@ -145,6 +176,14 @@ export default function AdminLoginPage() {
                 </span>
               )}
             </Button>
+            {googleEnabled && (
+              <a
+                href={`/api/auth/google/start?admin=1${rememberMe ? "&remember=1" : ""}`}
+                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-lg border border-brand-border bg-brand-surface text-sm font-medium text-brand-text transition hover:bg-brand-dark"
+              >
+                Entrar com Google
+              </a>
+            )}
           </form>
         </div>
 

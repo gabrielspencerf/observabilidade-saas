@@ -3,7 +3,9 @@
  * POST /api/dashboard/funnels — cria funil (body: name, description?, isActive?).
  */
 import { NextRequest, NextResponse } from "next/server";
-import { requireAuth } from "@/server/auth";
+import { requireDashboardApiAuth } from "@/server/dashboard/api-auth";
+import { dashboardApiAuthErrorResponse } from "@/server/dashboard/api-route-errors";
+import { PERMISSION_SLUGS } from "@/server/rbac";
 import {
   listFunnelsForTenant,
   createFunnelForTenant,
@@ -12,22 +14,12 @@ import {
 export async function GET(request: NextRequest) {
   let session;
   try {
-    session = await requireAuth(request);
+    session = await requireDashboardApiAuth(request, PERMISSION_SLUGS.FUNNELS_READ);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return dashboardApiAuthErrorResponse(err);
   }
 
-  const tenantId = session.session.currentTenantId;
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Tenant não selecionado" },
-      { status: 400 }
-    );
-  }
+  const tenantId = session.session.currentTenantId!;
 
   const list = await listFunnelsForTenant(tenantId);
   return NextResponse.json(list);
@@ -36,22 +28,12 @@ export async function GET(request: NextRequest) {
 export async function POST(request: NextRequest) {
   let session;
   try {
-    session = await requireAuth(request);
+    session = await requireDashboardApiAuth(request, PERMISSION_SLUGS.FUNNELS_WRITE);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return dashboardApiAuthErrorResponse(err);
   }
 
-  const tenantId = session.session.currentTenantId;
-  if (!tenantId) {
-    return NextResponse.json(
-      { error: "Tenant não selecionado" },
-      { status: 400 }
-    );
-  }
+  const tenantId = session.session.currentTenantId!;
 
   let body: Record<string, unknown>;
   try {

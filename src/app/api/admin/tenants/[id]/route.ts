@@ -61,7 +61,12 @@ export async function PATCH(
     );
   }
 
-  let body: { name?: string; slug?: string; is_active?: boolean };
+  let body: {
+    name?: string;
+    slug?: string;
+    is_active?: boolean;
+    settings?: Record<string, unknown> | null;
+  };
   try {
     body = await request.json();
   } catch {
@@ -75,6 +80,7 @@ export async function PATCH(
     name: body.name,
     slug: body.slug,
     isActive: body.is_active,
+    settings: body.settings,
   });
 
   if ("error" in result) {

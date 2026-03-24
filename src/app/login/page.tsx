@@ -9,15 +9,36 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 import { ArrowRight, Lock, Mail } from "lucide-react";
+import { BrandMark } from "@/components/brand-mark";
+import { sanitizeInternalRedirect } from "@/lib/security/redirect";
 
 function LoginForm() {
   const router = useRouter();
   const searchParams = useSearchParams();
-  const from = searchParams.get("from") ?? "/dashboard";
+  const from = sanitizeInternalRedirect(searchParams.get("from"), "/dashboard", [
+    "/dashboard",
+    "/admin",
+  ]);
+  const oauthError = searchParams.get("error");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [rememberMe, setRememberMe] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
+  const googleEnabled = process.env.NEXT_PUBLIC_AUTH_GOOGLE_LOGIN_ENABLED === "true";
+  const resetEnabled = process.env.NEXT_PUBLIC_AUTH_PASSWORD_RESET_ENABLED === "true";
+  const rememberEnabled = process.env.NEXT_PUBLIC_AUTH_REMEMBER_ME_ENABLED === "true";
+
+  const oauthErrorMessage =
+    oauthError === "google_invite_only"
+      ? "Seu e-mail Google não está convidado para esta plataforma."
+      : oauthError === "google_forbidden"
+        ? "Sua conta Google não possui acesso administrativo."
+        : oauthError === "google_not_verified"
+          ? "A conta Google precisa ter e-mail verificado."
+          : oauthError
+            ? "Falha no login com Google. Tente novamente."
+            : null;
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
@@ -27,9 +48,9 @@ function LoginForm() {
       const res = await fetch("/api/auth/login", {
         method: "POST",
         headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ email, password }),
+        body: JSON.stringify({ email, password, remember_me: rememberMe }),
       });
-      const data = await res.json().catch(() => ({}));
+      const data = await res.json().catch(() => ({} as Record<string, unknown>));
       if (!res.ok) {
         setError(data.error ?? "Falha no login. Tente novamente.");
         return;
@@ -57,14 +78,7 @@ function LoginForm() {
         <div className="bg-brand-surface p-8 rounded-[24px] shadow-soft-lg animate-fade-in border border-brand-border/60 relative overflow-hidden">
 
           <div className="flex flex-col items-center mb-8">
-            <div className="h-16 w-16 rounded-xl bg-brand-surface border border-brand-border flex items-center justify-center mb-4 shadow-inner relative group">
-              <div className="absolute inset-0 bg-brand-neon/10 rounded-xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
-              <img
-                src="/logo.svg"
-                alt="Creative Lane"
-                className="h-8 w-8 text-brand-text logo-adaptive relative z-10"
-              />
-            </div>
+            <BrandMark size="lg" className="mb-4" />
             <h1 className="text-2xl font-bold text-brand-text tracking-tight font-display">
               Acesso do Cliente
             </h1>
@@ -81,6 +95,11 @@ function LoginForm() {
               >
                 <div className="w-1.5 h-1.5 rounded-full bg-red-500 animate-pulse"></div>
                 {error}
+              </div>
+            )}
+            {oauthErrorMessage && !error && (
+              <div className="rounded-lg bg-amber-500/10 px-4 py-3 text-sm text-amber-400 border border-amber-500/20">
+                {oauthErrorMessage}
               </div>
             )}
             <div className="space-y-1.5 relative">
@@ -129,6 +148,24 @@ function LoginForm() {
                 />
               </div>
             </div>
+            {rememberEnabled && (
+              <label className="flex items-center gap-2 text-sm text-brand-muted">
+                <input
+                  type="checkbox"
+                  checked={rememberMe}
+                  onChange={(e) => setRememberMe(e.target.checked)}
+                  className="rounded border-brand-border bg-brand-surface text-brand-neon focus:ring-brand-neon"
+                />
+                Lembrar de mim neste dispositivo
+              </label>
+            )}
+            {resetEnabled && (
+              <div className="text-right">
+                <Link href="/forgot-password" className="text-sm text-brand-neon hover:underline">
+                  Esqueci minha senha
+                </Link>
+              </div>
+            )}
             <Button type="submit" disabled={loading} className="w-full mt-6 h-12 text-[15px] group">
               {loading ? (
                 <span className="flex items-center gap-2">
@@ -142,6 +179,14 @@ function LoginForm() {
                 </span>
               )}
             </Button>
+            {googleEnabled && (
+              <a
+                href={`/api/auth/google/start?from=${encodeURIComponent(from)}${rememberMe ? "&remember=1" : ""}`}
+                className="mt-2 inline-flex h-11 w-full items-center justify-center rounded-lg border border-brand-border bg-brand-surface text-sm font-medium text-brand-text transition hover:bg-brand-dark"
+              >
+                Entrar com Google
+              </a>
+            )}
           </form>
         </div>
 

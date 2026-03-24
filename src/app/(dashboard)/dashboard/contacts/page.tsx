@@ -1,6 +1,7 @@
 import { getDashboardTenantContext, listContactsForTenant } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
+import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Button } from "@/components/ui";
 import { ImportExportActions } from "@/components/dashboard/import-export-actions";
@@ -30,31 +31,36 @@ export default async function DashboardContactsPage({
 
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-brand-text">Contatos</h1>
-        <div className="flex flex-wrap items-center gap-4">
-          <ImportExportActions
-            exportUrl="/api/dashboard/contacts/export"
-            importUrl="/api/dashboard/contacts/import"
-            templateUrl="/templates/modelo-contatos.csv"
-            search={search}
-            label="Contatos"
-          />
-          <form method="GET" action="/dashboard/contacts" className="flex gap-2">
-            <Input
-              type="search"
-              name="search"
-              defaultValue={search}
-              placeholder="Nome, e-mail ou telefone"
-              className="w-48 bg-brand-surface border-brand-border text-brand-text"
-              aria-label="Buscar contatos"
+      <DashboardPageHeader
+        title="Contatos"
+        description="Lista de contatos consolidados por importação e interações."
+        icon={UserCircle}
+        badges={[`${contactsList.length} itens`]}
+        actions={
+          <>
+            <ImportExportActions
+              exportUrl="/api/dashboard/contacts/export"
+              importUrl="/api/dashboard/contacts/import"
+              templateUrl="/templates/modelo-contatos.csv"
+              search={search}
+              label="Contatos"
             />
-            <Button type="submit" variant="primary" size="sm" className="btn-cta-primary">
-              Buscar
-            </Button>
-          </form>
-        </div>
-      </div>
+            <form method="GET" action="/dashboard/contacts" className="flex gap-2">
+              <Input
+                type="search"
+                name="search"
+                defaultValue={search}
+                placeholder="Nome, e-mail ou telefone"
+                className="w-48 bg-brand-surface border-brand-border text-brand-text"
+                aria-label="Buscar contatos"
+              />
+              <Button type="submit" variant="primary" size="sm" className="btn-cta-primary">
+                Buscar
+              </Button>
+            </form>
+          </>
+        }
+      />
 
       {contactsList.length === 0 ? (
         <EmptyState

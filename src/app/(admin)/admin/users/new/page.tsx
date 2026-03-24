@@ -11,6 +11,7 @@ export default function NewUserPage() {
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
+  const [sendAccessEmail, setSendAccessEmail] = useState(true);
   const [isActive, setIsActive] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
@@ -26,13 +27,19 @@ export default function NewUserPage() {
         body: JSON.stringify({
           name: name.trim() || null,
           email: email.trim(),
-          password,
+          password: password.trim() || undefined,
           is_active: isActive,
+          send_access_email: sendAccessEmail,
         }),
       });
       const data = await res.json().catch(() => ({}));
       if (!res.ok) {
         setError(data.error ?? "Erro ao criar usuário");
+        return;
+      }
+      if (data?.accessEmail && data.accessEmail.sent === false && data.accessEmail.error) {
+        setError(`Usuário criado, mas falhou envio do acesso inicial: ${data.accessEmail.error}`);
+        setSubmitting(false);
         return;
       }
       router.push("/admin/users");
@@ -91,7 +98,7 @@ export default function NewUserPage() {
         </div>
         <div className="space-y-2">
           <label htmlFor="password" className="block text-sm font-medium text-brand-text">
-            Senha inicial
+            Senha inicial (opcional)
           </label>
           <Input
             id="password"
@@ -99,10 +106,23 @@ export default function NewUserPage() {
             value={password}
             onChange={(e) => setPassword(e.target.value)}
             className="w-full bg-brand-surface border-brand-border text-brand-text"
-            required
             minLength={8}
           />
-          <p className="mt-1 text-xs text-brand-muted">Mínimo 8 caracteres</p>
+          <p className="mt-1 text-xs text-brand-muted">
+            Se vazio, o sistema envia link para definição de senha no primeiro acesso.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <input
+            id="send_access_email"
+            type="checkbox"
+            checked={sendAccessEmail}
+            onChange={(e) => setSendAccessEmail(e.target.checked)}
+            className="rounded border-brand-border bg-brand-surface text-brand-neon focus:ring-brand-neon"
+          />
+          <label htmlFor="send_access_email" className="text-sm text-brand-text">
+            Enviar e-mail de acesso inicial (link para definir senha)
+          </label>
         </div>
         <div className="flex items-center gap-2">
           <input

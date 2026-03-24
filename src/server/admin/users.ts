@@ -1,10 +1,11 @@
 /**
  * CRUD de usuários (admin global). Não faz checagem de permissão — chamador deve usar requireAdmin.
  */
-import argon2 from "argon2";
+import { randomBytes } from "node:crypto";
 import { eq } from "drizzle-orm";
 import { getDb } from "@/server/db";
 import { users } from "@/db/schema";
+import { hashPassword } from "@/server/auth";
 
 export interface UserRow {
   id: string;
@@ -18,7 +19,7 @@ export interface UserRow {
 export interface CreateUserInput {
   name: string | null;
   email: string;
-  password: string;
+  password?: string;
   isActive: boolean;
 }
 
@@ -59,7 +60,7 @@ const MIN_PASSWORD_LENGTH = 8;
 
 export async function createUser(
   input: CreateUserInput
-): Promise<{ id: string } | { error: string }> {
+): Promise<{ id: string; email: string; name: string | null } | { error: string }> {
   const db = getDb();
   const email = (input.email ?? "").trim().toLowerCase();
   const name = input.name?.trim() || null;
@@ -68,11 +69,13 @@ export async function createUser(
 
   if (!email) return { error: "E-mail é obrigatório" };
   if (email.length > 255) return { error: "E-mail muito longo" };
-  if (password.length < MIN_PASSWORD_LENGTH) {
+  if (password && password.length < MIN_PASSWORD_LENGTH) {
     return { error: `Senha deve ter no mínimo ${MIN_PASSWORD_LENGTH} caracteres` };
   }
 
-  const passwordHash = await argon2.hash(password, { type: argon2.argon2id });
+  const effectivePassword =
+    password.length > 0 ? password : randomBytes(24).toString("base64url");
+  const passwordHash = await hashPassword(effectivePassword);
 
   try {
     const [inserted] = await db
@@ -85,7 +88,7 @@ export async function createUser(
       })
       .returning({ id: users.id });
     if (!inserted) return { error: "Falha ao criar usuário" };
-    return { id: inserted.id };
+    return { id: inserted.id, email, name };
   } catch (e) {
     const msg = e instanceof Error ? e.message : "";
     if (msg.includes("unique") || msg.includes("duplicate")) {

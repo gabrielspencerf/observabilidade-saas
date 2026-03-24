@@ -1,14 +1,16 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
+import { ProviderBrandIcon } from "@/components/provider-brand-icon";
 
 type Tenant = { id: string; name: string; slug: string };
 
 export default function NewEvolutionInstancePage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
   const [tenants, setTenants] = useState<Tenant[]>([]);
   const [tenantId, setTenantId] = useState("");
   const [externalId, setExternalId] = useState("");
@@ -18,6 +20,11 @@ export default function NewEvolutionInstancePage() {
   const [error, setError] = useState<string | null>(null);
   const [submitting, setSubmitting] = useState(false);
   const [created, setCreated] = useState<{ id: string; webhook_url: string } | null>(null);
+
+  useEffect(() => {
+    const preselectedTenantId = searchParams.get("tenantId");
+    if (preselectedTenantId) setTenantId(preselectedTenantId);
+  }, [searchParams]);
 
   useEffect(() => {
     fetch("/api/admin/tenants")
@@ -106,9 +113,16 @@ export default function NewEvolutionInstancePage() {
           ← Voltar às integrações
         </Link>
       </div>
-      <h1 className="text-xl font-semibold text-brand-text">Conectar instância Evolution API</h1>
+      <h1 className="inline-flex items-center gap-2 text-xl font-semibold text-brand-text">
+        <ProviderBrandIcon provider="evolution" className="h-5 w-5 rounded" />
+        Conectar instância Evolution API
+      </h1>
       <p className="mt-1 text-sm text-brand-muted">
         Cadastre uma instância Evolution para receber webhooks. Use a URL gerada na configuração da Evolution.
+      </p>
+      <p className="mt-1 inline-flex items-center gap-1 text-xs text-brand-muted">
+        <ProviderBrandIcon provider="whatsapp" className="h-3.5 w-3.5 rounded" />
+        Conector para canal WhatsApp.
       </p>
       <form onSubmit={handleSubmit} className="mt-6 max-w-md space-y-4">
         {error && (
@@ -124,7 +138,7 @@ export default function NewEvolutionInstancePage() {
             id="tenant"
             value={tenantId}
             onChange={(e) => setTenantId(e.target.value)}
-            className="mt-1 block w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text"
+            className="app-select mt-1 block"
             required
           >
             <option value="">Selecione</option>

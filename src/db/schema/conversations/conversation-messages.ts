@@ -1,4 +1,5 @@
 import {
+  boolean,
   index,
   jsonb,
   pgTable,
@@ -26,6 +27,8 @@ export const conversationMessages = pgTable(
       .references(() => conversations.id, { onDelete: "cascade" }),
     externalId: varchar("external_id", { length: 255 }),
     direction: varchar("direction", { length: 8 }).notNull(), // in | out
+    /** True quando a mensagem foi enviada por agente/IA/BOT (não por humano). */
+    sentByBot: boolean("sent_by_bot").notNull().default(false),
     contentType: varchar("content_type", { length: 64 }).notNull(),
     /** Texto para exibição (mensagem de texto, legenda). Null para mídia sem legenda. */
     contentText: text("content_text"),

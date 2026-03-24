@@ -100,7 +100,7 @@ export default function TypebotMetricsPage() {
           </label>
           <select
             id="bot_id"
-            className="mt-1 block w-full rounded-xl border border-brand-border bg-brand-surface px-4 py-2.5 text-sm text-brand-text"
+            className="app-select mt-1 block"
             value={botId}
             onChange={(e) => setBotId(e.target.value)}
             required

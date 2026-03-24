@@ -6,3 +6,4 @@ export { permissions } from "./permissions";
 export { rolePermissions } from "./role-permissions";
 export { memberships } from "./memberships";
 export { sessions } from "./sessions";
+export { passwordResetTokens } from "./password-reset-tokens";

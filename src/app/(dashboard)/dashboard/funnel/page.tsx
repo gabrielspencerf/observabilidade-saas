@@ -5,6 +5,7 @@ import {
   getFunnelOverviewForTenant,
 } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
+import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
 
 const PERIOD_OPTIONS = [
@@ -46,22 +47,20 @@ export default async function DashboardFunnelPage({
 
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <div className="mb-4 flex flex-wrap items-start justify-between gap-4">
-        <div>
-          <span className="section-eyebrow">análise de pipeline</span>
-          <h1 className="text-2xl font-bold text-brand-text">Funil</h1>
-          <p className="mt-2 text-brand-muted">
-            Volume por etapa, conversão e progressão. Destaque para o possível
-            gargalo entre etapas.
-          </p>
-        </div>
-        <Link
-          href="/dashboard/funnel/config"
-          className="rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface/80"
-        >
-          Configurar funil
-        </Link>
-      </div>
+      <DashboardPageHeader
+        title="Funil"
+        description="Volume por etapa, conversão e progressão com foco em gargalos."
+        icon={Filter}
+        badges={periodDays != null ? [`Período ${periodDays}d`] : ["Todo histórico"]}
+        actions={
+          <Link
+            href="/dashboard/funnel/config"
+            className="rounded-lg border border-brand-border bg-brand-surface px-4 py-2 text-sm font-medium text-brand-text hover:bg-brand-surface/80"
+          >
+            Configurar funil
+          </Link>
+        }
+      />
 
       {/* Filtro de período: leads com first_seen_at no período */}
       <div className="mt-4 flex flex-wrap items-center gap-2 text-sm">

@@ -1,20 +1,47 @@
 import Link from "next/link";
+import { Building2, CircleDot } from "lucide-react";
 import { listTenants } from "@/server/admin/tenants";
 import { PageSection } from "@/components/layout/page-section";
 import { ListTableHeader } from "@/components/layout/list-table-header";
 import { ListRowCard } from "@/components/layout/list-row-card";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Button } from "@/components/ui";
+import { agentDebugLog } from "@/server/debug/agent-debug-log";
 
 export default async function AdminTenantsPage() {
   const tenants = await listTenants();
+  agentDebugLog({
+    runId: "admin-pages-styling",
+    hypothesisId: "H_ADMIN_TENANTS_1",
+    location: "src/app/(admin)/admin/tenants/page.tsx:AdminTenantsPage",
+    message: "Render da listagem de tenants estilizada",
+    data: {
+      totalTenants: tenants.length,
+      activeTenants: tenants.filter((item) => item.isActive).length,
+    },
+  });
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <div className="mb-6 flex items-center justify-between gap-4">
-        <h1 className="text-2xl font-bold text-brand-text">Tenants</h1>
-        <Link href="/admin/tenants/new">
-          <Button size="sm">Novo tenant</Button>
-        </Link>
+      <div className="mb-6 flex flex-wrap items-start justify-between gap-4">
+        <div>
+          <div className="flex items-center gap-2">
+            <div className="rounded-md bg-brand-border/60 p-1.5">
+              <Building2 className="h-4 w-4 text-brand-text" />
+            </div>
+            <h1 className="text-2xl font-bold text-brand-text">Tenants</h1>
+          </div>
+          <p className="mt-2 text-sm text-brand-muted">
+            Cadastre e mantenha as contas de clientes com status e acesso organizados.
+          </p>
+        </div>
+        <div className="flex items-center gap-2">
+          <span className="rounded-full border border-brand-border px-2.5 py-1 text-xs text-brand-muted">
+            {tenants.length} cadastrados
+          </span>
+          <Link href="/admin/tenants/new">
+            <Button size="sm">Novo tenant</Button>
+          </Link>
+        </div>
       </div>
 
       {tenants.length === 0 ? (
@@ -39,7 +66,8 @@ export default async function AdminTenantsPage() {
           </div>
           {tenants.map((t) => (
             <ListRowCard key={t.id} className="grid grid-cols-1 md:grid-cols-4 gap-4 items-center">
-              <div>
+              <div className="flex items-center gap-2">
+                <CircleDot className="h-3.5 w-3.5 text-brand-muted" />
                 <p className="text-sm font-semibold text-brand-text">{t.name}</p>
               </div>
               <div className="text-sm font-mono text-brand-muted">{t.slug}</div>

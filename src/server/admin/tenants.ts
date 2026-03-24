@@ -9,6 +9,7 @@ export interface TenantRow {
   id: string;
   name: string;
   slug: string;
+  settings: Record<string, unknown> | null;
   isActive: boolean;
   createdAt: Date;
   updatedAt: Date;
@@ -23,6 +24,7 @@ export interface UpdateTenantInput {
   name?: string;
   slug?: string;
   isActive?: boolean;
+  settings?: Record<string, unknown> | null;
 }
 
 export async function listTenants(): Promise<TenantRow[]> {
@@ -32,6 +34,7 @@ export async function listTenants(): Promise<TenantRow[]> {
       id: tenants.id,
       name: tenants.name,
       slug: tenants.slug,
+      settings: tenants.settings,
       isActive: tenants.isActive,
       createdAt: tenants.createdAt,
       updatedAt: tenants.updatedAt,
@@ -48,6 +51,7 @@ export async function getTenantById(id: string): Promise<TenantRow | null> {
       id: tenants.id,
       name: tenants.name,
       slug: tenants.slug,
+      settings: tenants.settings,
       isActive: tenants.isActive,
       createdAt: tenants.createdAt,
       updatedAt: tenants.updatedAt,
@@ -104,6 +108,7 @@ export async function updateTenant(
       ? input.slug.toLowerCase().replace(/\s+/g, "-")
       : existing.slug;
   const isActive = input.isActive !== undefined ? input.isActive : existing.isActive;
+  const settings = input.settings !== undefined ? input.settings : existing.settings;
 
   if (!name || !slug) return { error: "Nome e slug são obrigatórios" };
   if (slug.length > 64) return { error: "Slug muito longo" };
@@ -114,6 +119,7 @@ export async function updateTenant(
       .set({
         name,
         slug,
+        settings,
         isActive,
         updatedAt: new Date(),
       })

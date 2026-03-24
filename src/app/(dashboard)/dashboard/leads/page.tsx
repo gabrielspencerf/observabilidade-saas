@@ -1,11 +1,13 @@
 import { getDashboardTenantContext, listLeadsForTenant } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
+import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
 import { Input, Button } from "@/components/ui";
 import { ImportExportActions } from "@/components/dashboard/import-export-actions";
 import Link from "next/link";
 import { Users } from "lucide-react";
+import { agentDebugLog } from "@/server/debug/agent-debug-log";
 
 const LEADS_LIMIT = 200;
 
@@ -25,42 +27,55 @@ export default async function DashboardLeadsPage({
   const params = await searchParams;
   const search = typeof params.search === "string" ? params.search : undefined;
   const leads = await listLeadsForTenant(tenantId, { search, limit: LEADS_LIMIT });
+  agentDebugLog({
+    runId: "dashboard-visual-standardization",
+    hypothesisId: "H_CLIENT_STYLE_1",
+    location: "src/app/(dashboard)/dashboard/leads/page.tsx:DashboardLeadsPage",
+    message: "Render da página leads com header padronizado",
+    data: {
+      leadsCount: leads.length,
+      hasSearch: Boolean(search),
+    },
+  });
 
   return (
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
-      <div className="mb-6 flex flex-wrap items-center justify-between gap-4">
-        <div className="flex items-center gap-3">
-          <h1 className="text-2xl font-bold text-brand-text">Leads</h1>
-          <Link
-            href="/dashboard/leads/kanban"
-            className="text-sm font-medium text-brand-muted hover:text-brand-neon"
-          >
-            Ver Kanban
-          </Link>
-        </div>
-        <div className="flex flex-wrap items-center gap-4">
-          <ImportExportActions
-            exportUrl="/api/dashboard/leads/export"
-            importUrl="/api/dashboard/leads/import"
-            templateUrl="/templates/modelo-leads.csv"
-            search={search}
-            label="Leads"
-          />
-          <form method="GET" action="/dashboard/leads" className="flex gap-2">
-            <Input
-              type="search"
-              name="search"
-              defaultValue={search}
-              placeholder="Nome, e-mail ou telefone"
-              className="w-48 bg-brand-surface border-brand-border text-brand-text"
-              aria-label="Buscar leads"
+      <DashboardPageHeader
+        title="Leads"
+        description="Base de leads capturados e atualizados pelos canais conectados."
+        icon={Users}
+        badges={[`${leads.length} itens`]}
+        actions={
+          <>
+            <Link
+              href="/dashboard/leads/kanban"
+              className="rounded-md border border-brand-border px-2.5 py-1 text-xs font-medium text-brand-muted transition hover:bg-brand-surface hover:text-brand-text"
+            >
+              Ver Kanban
+            </Link>
+            <ImportExportActions
+              exportUrl="/api/dashboard/leads/export"
+              importUrl="/api/dashboard/leads/import"
+              templateUrl="/templates/modelo-leads.csv"
+              search={search}
+              label="Leads"
             />
-            <Button type="submit" variant="primary" size="sm" className="btn-cta-primary">
-              Buscar
-            </Button>
-          </form>
-        </div>
-      </div>
+            <form method="GET" action="/dashboard/leads" className="flex gap-2">
+              <Input
+                type="search"
+                name="search"
+                defaultValue={search}
+                placeholder="Nome, e-mail ou telefone"
+                className="w-48 bg-brand-surface border-brand-border text-brand-text"
+                aria-label="Buscar leads"
+              />
+              <Button type="submit" variant="primary" size="sm" className="btn-cta-primary">
+                Buscar
+              </Button>
+            </form>
+          </>
+        }
+      />
 
       {leads.length === 0 ? (
         <EmptyState
