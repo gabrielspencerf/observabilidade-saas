@@ -20,7 +20,7 @@ function getSmtpConfig() {
   const from =
     process.env.SMTP_FROM ||
     process.env.MAILER_SENDER_EMAIL ||
-    "noreply@exemplo.com";
+    "hub@creativelane.io";
   const replyTo =
     process.env.SMTP_REPLY_TO ||
     process.env.MAILER_INBOUND_EMAIL_DOMAIN ||

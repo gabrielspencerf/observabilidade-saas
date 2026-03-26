@@ -86,7 +86,7 @@ Itens mais recentes no topo. Formato: **Contexto** → **Erro** → **Causa** �
 
 ### 1.7 PostgreSQL não está rodando (ECONNREFUSED :5432)
 
-- **Contexto:** Rodar `scripts/create-db.ts` ou `npm run db:migrate` após criar o `.env` com `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app`.
+- **Contexto:** Rodar `scripts/create-db.ts` ou `npm run db:migrate` após criar o `.env` com `DATABASE_URL=postgresql://postgres:postgres@localhost:5432/vysen`.
 - **Erro:** `connect ECONNREFUSED 127.0.0.1:5432` (e `::1:5432`).
 - **Causa:** O serviço PostgreSQL não está instalado ou não está em execução no Windows.
 - **Solução:** Instalar o PostgreSQL (ex.: [postgresql.org/download/windows](https://www.postgresql.org/download/windows)) ou subir um container Docker (`docker run -d -p 5432:5432 -e POSTGRES_PASSWORD=postgres postgres`). Depois iniciar o serviço (Services → postgresql-x64) ou garantir que o container está rodando. Em seguida rodar `npx tsx scripts/create-db.ts` e `npm run db:migrate` e `npm run db:seed`.

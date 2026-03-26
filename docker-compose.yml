@@ -10,7 +10,7 @@ services:
     environment:
       POSTGRES_USER: postgres
       POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-postgres}
-      POSTGRES_DB: app
+      POSTGRES_DB: vysen
     volumes:
       - postgres_data:/var/lib/postgresql/data
     healthcheck:
@@ -34,11 +34,11 @@ services:
 
   app:
     build: .
-    image: observabilidade-saas:latest
+    image: ghcr.io/gabrielspencerf/observabilidade-saas:latest
     container_name: app-web
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/app
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/vysen
       REDIS_URL: redis://redis:6379
       NODE_ENV: production
     ports:
@@ -49,11 +49,11 @@ services:
     restart: unless-stopped
 
   worker:
-    image: observabilidade-saas:latest
+    image: ghcr.io/gabrielspencerf/observabilidade-saas:latest
     container_name: app-worker
     env_file: .env
     environment:
-      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/app
+      DATABASE_URL: postgresql://postgres:${POSTGRES_PASSWORD:-postgres}@postgres:5432/vysen
       REDIS_URL: redis://redis:6379
       NODE_ENV: production
     command: ["npx", "tsx", "src/workers/runner.ts"]

@@ -6,7 +6,7 @@ const drizzleConfig = {
   out: "./src/db/migrations",
   dialect: "postgresql" as const,
   dbCredentials: {
-    url: process.env.DATABASE_URL ?? "postgresql://localhost:5432/app",
+    url: process.env.DATABASE_URL ?? "postgresql://postgres:postgres@localhost:5432/vysen",
   },
 };
 

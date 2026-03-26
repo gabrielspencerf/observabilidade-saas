@@ -11,7 +11,7 @@ set -euo pipefail
 STACK_NAME="${STACK_NAME:-observabilidade}"
 POSTGRES_SERVICE="${POSTGRES_SERVICE:-${STACK_NAME}_postgres}"
 POSTGRES_USER="${POSTGRES_USER:-postgres}"
-POSTGRES_DB="${POSTGRES_DB:-app}"
+POSTGRES_DB="${POSTGRES_DB:-vysen}"
 BACKUP_FILE="${BACKUP_FILE:-}"
 FORCE="${FORCE:-0}"
 

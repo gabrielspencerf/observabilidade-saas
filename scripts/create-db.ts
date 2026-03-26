@@ -2,7 +2,7 @@
  * Cria o banco de dados do app se não existir.
  * Conecta ao banco "postgres" (padrão) e executa CREATE DATABASE.
  * Uso: tsx scripts/create-db.ts
- * Requer: DATABASE_URL no .env (ex.: postgresql://postgres:postgres@localhost:5432/app)
+ * Requer: DATABASE_URL no .env (ex.: postgresql://postgres:postgres@localhost:5432/vysen)
  */
 import "dotenv/config";
 import postgres from "postgres";
@@ -16,7 +16,7 @@ if (!url) {
 // Conecta ao banco padrão "postgres" para criar o DB do app
 const match = url.match(/^(postgres(?:ql)?:\/\/[^/]+)\/([^/?]+)/);
 const baseUrl = match ? `${match[1]}/postgres` : url.replace(/\/[^/]+(\?|$)/, "/postgres$1");
-const dbName = match ? match[2] : "app";
+const dbName = match ? match[2] : "vysen";
 
 if (!/^[a-zA-Z_][a-zA-Z0-9_]*$/.test(dbName)) {
   console.error("Nome do banco inválido:", dbName);

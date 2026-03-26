@@ -41,7 +41,7 @@ const PERMISSION_SLUGS = [
 const SUPER_ADMIN_PERMISSIONS = PERMISSION_SLUGS.map((p) => p.slug);
 
 function getSeedEnv() {
-  const email = process.env.SEED_ADMIN_EMAIL ?? "admin@example.com";
+  const email = process.env.SEED_ADMIN_EMAIL ?? "admin@app.vysen.com.br";
   const password = process.env.SEED_ADMIN_PASSWORD;
   if (!password) {
     throw new Error(
@@ -197,7 +197,7 @@ export async function run(): Promise<void> {
     })
     .onConflictDoNothing({ target: [memberships.userId, memberships.tenantId] });
 
-  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://sua-app.com";
+  const appUrl = process.env.NEXT_PUBLIC_APP_URL?.trim() || "https://app.vysen.com.br";
 
   // 7. Opcional: bot Typebot no tenant do seed (idempotente por tenant_id + external_id)
   const typebotExternalId = process.env.SEED_TYPEBOT_EXTERNAL_ID?.trim();

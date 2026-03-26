@@ -13,6 +13,7 @@
     "worker:readiness": "tsx scripts/worker-readiness.ts",
     "db:generate": "drizzle-kit generate",
     "db:migrate": "drizzle-kit migrate",
+    "db:wait": "node scripts/wait-for-db.js",
     "db:push": "drizzle-kit push",
     "db:seed": "tsx scripts/db-seed.ts",
     "db:create": "tsx scripts/create-db.ts",

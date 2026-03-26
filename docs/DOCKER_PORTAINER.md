@@ -53,13 +53,13 @@ Copie o `.env.example` para `.env` e preencha pelo menos:
 
 O `docker-compose.yml` monta automaticamente:
 
-- **DATABASE_URL** = `postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/app`
+- **DATABASE_URL** = `postgresql://postgres:${POSTGRES_PASSWORD}@postgres:5432/vysen`
 - **REDIS_URL** = `redis://redis:6379`
 
 Você pode definir no `.env` (ou no Portainer):
 
 - **APP_PORT** — porta no host (padrão `3000`).
-- **NEXT_PUBLIC_APP_URL** — URL pública da aplicação (ex.: `https://seu-dominio.com`).
+- **NEXT_PUBLIC_APP_URL** — URL pública da aplicação (ex.: `https://app.vysen.com.br`).
 - **INTEGRATIONS_ENCRYPTION_KEY** — se for cadastrar Evolution/UAZAPI/Typebot com API key/token (veja `docs/CONFIG_CREDENTIALS.md`).
 
 ---

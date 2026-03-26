@@ -30,8 +30,8 @@ SMTP:
 - `SMTP_SECURE`
 - `SMTP_USER`
 - `SMTP_PASS`
-- `SMTP_FROM=noreply@exemplo.com`
-- `SMTP_REPLY_TO=suporte@exemplo.com`
+- `SMTP_FROM=hub@creativelane.io` (credenciais SMTP podem permanecer neste dominio mesmo com app em outro host)
+- `SMTP_REPLY_TO=hub@creativelane.io` (opcional)
 
 Google OAuth:
 

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Estrutura do banco — observabilidade-saas</title>
+    <style>
+      :root {
+        --bg: #0f1419;
+        --surface: #1a2332;
+        --surface2: #243044;
+        --text: #e8edf4;
+        --muted: #8b9cb3;
+        --accent: #5eead4;
+        --hub: #fbbf24;
+        --auth: #a78bfa;
+        --int: #60a5fa;
+        --raw: #38bdf8;
+        --fun: #f472b6;
+        --crm: #4ade80;
+        --msg: #2dd4bf;
+        --snap: #fb923c;
+        --ai: #c084fc;
+        --app: #94a3b8;
+        --vys: #e879f9;
+        --border: rgba(255, 255, 255, 0.08);
+        --radius: 12px;
+        --font: "Segoe UI", system-ui, -apple-system, sans-serif;
+      }
+
+      * {
+        box-sizing: border-box;
+      }
+
+      body {
+        margin: 0;
+        font-family: var(--font);
+        background: var(--bg);
+        color: var(--text);
+        line-height: 1.45;
+        font-size: 15px;
+      }
+
+      .wrap {
+        max-width: 1200px;
+        margin: 0 auto;
+        padding: 2rem 1.25rem 4rem;
+      }
+
+      header {
+        margin-bottom: 2rem;
+        padding-bottom: 1.5rem;
+        border-bottom: 1px solid var(--border);
+      }
+
+      h1 {
+        margin: 0 0 0.5rem;
+        font-size: 1.75rem;
+        font-weight: 700;
+        letter-spacing: -0.02em;
+      }
+
+      .sub {
+        color: var(--muted);
+        font-size: 0.95rem;
+        max-width: 52ch;
+      }
+
+      .legend {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.5rem 1rem;
+        margin-top: 1rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      .legend span {
+        display: inline-flex;
+        align-items: center;
+        gap: 0.35rem;
+      }
+
+      .dot {
+        width: 10px;
+        height: 10px;
+        border-radius: 50%;
+      }
+
+      /* Mapa hub */
+      .map-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin: 2rem 0 1rem;
+      }
+
+      .hub-map {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        grid-template-rows: auto auto auto;
+        gap: 0.75rem;
+        align-items: stretch;
+        margin-bottom: 2.5rem;
+      }
+
+      @media (max-width: 900px) {
+        .hub-map {
+          grid-template-columns: 1fr;
+        }
+        .hub-center {
+          order: -1;
+        }
+      }
+
+      .hub-cell {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        padding: 1rem 1.1rem;
+        min-height: 120px;
+      }
+
+      .hub-cell h3 {
+        margin: 0 0 0.6rem;
+        font-size: 0.7rem;
+        text-transform: uppercase;
+        letter-spacing: 0.1em;
+        font-weight: 600;
+      }
+
+      .hub-cell .tables {
+        font-size: 0.82rem;
+        color: var(--muted);
+        line-height: 1.5;
+      }
+
+      .hub-center {
+        grid-column: 2;
+        grid-row: 2;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        text-align: center;
+        background: linear-gradient(145deg, #2d2510 0%, var(--surface) 100%);
+        border: 2px solid rgba(251, 191, 36, 0.45);
+        min-height: 160px;
+      }
+
+      @media (max-width: 900px) {
+        .hub-center {
+          grid-column: 1;
+          grid-row: auto;
+        }
+      }
+
+      .hub-badge {
+        font-size: 1.35rem;
+        font-weight: 800;
+        color: var(--hub);
+        letter-spacing: -0.03em;
+      }
+
+      .hub-note {
+        font-size: 0.8rem;
+        color: var(--muted);
+        margin-top: 0.35rem;
+        max-width: 20ch;
+      }
+
+      .c-auth {
+        border-left: 4px solid var(--auth);
+      }
+      .c-auth h3 {
+        color: var(--auth);
+      }
+      .c-int {
+        border-left: 4px solid var(--int);
+      }
+      .c-int h3 {
+        color: var(--int);
+      }
+      .c-raw {
+        border-left: 4px solid var(--raw);
+      }
+      .c-raw h3 {
+        color: var(--raw);
+      }
+      .c-fun {
+        border-left: 4px solid var(--fun);
+      }
+      .c-fun h3 {
+        color: var(--fun);
+      }
+      .c-crm {
+        border-left: 4px solid var(--crm);
+      }
+      .c-crm h3 {
+        color: var(--crm);
+      }
+      .c-msg {
+        border-left: 4px solid var(--msg);
+      }
+      .c-msg h3 {
+        color: var(--msg);
+      }
+      .c-snap {
+        border-left: 4px solid var(--snap);
+      }
+      .c-snap h3 {
+        color: var(--snap);
+      }
+      .c-ai {
+        border-left: 4px solid var(--ai);
+      }
+      .c-ai h3 {
+        color: var(--ai);
+      }
+      .c-app {
+        border-left: 4px solid var(--app);
+      }
+      .c-app h3 {
+        color: var(--app);
+      }
+      .c-vys {
+        border-left: 4px solid var(--vys);
+      }
+      .c-vys h3 {
+        color: var(--vys);
+      }
+
+      /* Posicionamento células no mapa 3x3 */
+      .p-tl {
+        grid-column: 1;
+        grid-row: 1;
+      }
+      .p-tc {
+        grid-column: 2;
+        grid-row: 1;
+      }
+      .p-tr {
+        grid-column: 3;
+        grid-row: 1;
+      }
+      .p-ml {
+        grid-column: 1;
+        grid-row: 2;
+      }
+      .p-mr {
+        grid-column: 3;
+        grid-row: 2;
+      }
+      .p-bl {
+        grid-column: 1;
+        grid-row: 3;
+      }
+      .p-bc {
+        grid-column: 2;
+        grid-row: 3;
+      }
+      .p-br {
+        grid-column: 3;
+        grid-row: 3;
+      }
+
+      @media (max-width: 900px) {
+        .p-tl,
+        .p-tc,
+        .p-tr,
+        .p-ml,
+        .p-mr,
+        .p-bl,
+        .p-bc,
+        .p-br {
+          grid-column: 1;
+          grid-row: auto;
+        }
+      }
+
+      /* Detalhe por domínio */
+      .detail-title {
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        letter-spacing: 0.12em;
+        color: var(--muted);
+        margin: 2.5rem 0 1rem;
+      }
+
+      .domains {
+        display: flex;
+        flex-direction: column;
+        gap: 1rem;
+      }
+
+      .domain {
+        background: var(--surface);
+        border: 1px solid var(--border);
+        border-radius: var(--radius);
+        overflow: hidden;
+      }
+
+      .domain-head {
+        display: flex;
+        align-items: flex-start;
+        justify-content: space-between;
+        gap: 1rem;
+        padding: 1rem 1.25rem;
+        background: var(--surface2);
+        border-bottom: 1px solid var(--border);
+      }
+
+      .domain-head h2 {
+        margin: 0;
+        font-size: 1.05rem;
+        font-weight: 700;
+      }
+
+      .domain-head p {
+        margin: 0.35rem 0 0;
+        font-size: 0.85rem;
+        color: var(--muted);
+        max-width: 48ch;
+      }
+
+      .scope {
+        font-size: 0.7rem;
+        font-weight: 600;
+        text-transform: uppercase;
+        letter-spacing: 0.08em;
+        padding: 0.35rem 0.65rem;
+        border-radius: 6px;
+        white-space: nowrap;
+        background: rgba(255, 255, 255, 0.06);
+        color: var(--muted);
+      }
+
+      .scope.global {
+        color: var(--auth);
+        border: 1px solid rgba(167, 139, 250, 0.35);
+      }
+
+      .scope.tenant {
+        color: var(--accent);
+        border: 1px solid rgba(94, 234, 212, 0.35);
+      }
+
+      .domain-body {
+        padding: 1rem 1.25rem 1.25rem;
+      }
+
+      .table-list {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 0.45rem;
+      }
+
+      code.tn {
+        font-family: ui-monospace, "Cascadia Code", Consolas, monospace;
+        font-size: 0.78rem;
+        padding: 0.28rem 0.55rem;
+        background: var(--bg);
+        border: 1px solid var(--border);
+        border-radius: 6px;
+        color: #cbd5e1;
+      }
+
+      .fk-note {
+        margin-top: 0.85rem;
+        font-size: 0.8rem;
+        color: var(--muted);
+        padding-top: 0.85rem;
+        border-top: 1px dashed var(--border);
+      }
+
+      footer {
+        margin-top: 3rem;
+        padding-top: 1.5rem;
+        border-top: 1px solid var(--border);
+        font-size: 0.8rem;
+        color: var(--muted);
+      }
+
+      @media print {
+        body {
+          background: #fff;
+          color: #111;
+        }
+        .wrap {
+          max-width: 100%;
+        }
+        .hub-cell,
+        .domain {
+          break-inside: avoid;
+          border-color: #ccc;
+        }
+        .hub-center {
+          border-color: #e5a50a;
+        }
+        code.tn {
+          background: #f4f4f5;
+          color: #222;
+          border-color: #ddd;
+        }
+        .sub,
+        .legend,
+        .hub-note,
+        .domain-head p,
+        .fk-note,
+        footer {
+          color: #444;
+        }
+      }
+    </style>
+  </head>
+  <body>
+    <div class="wrap">
+      <header>
+        <h1>Estrutura do banco de dados</h1>
+        <p class="sub">
+          Postgres (Drizzle). Quase todas as tabelas de negócio têm <strong>tenant_id</strong> apontando para
+          <code class="tn">tenants</code>. Usuários são globais; o vínculo ao tenant é
+          <code class="tn">memberships</code>.
+        </p>
+        <div class="legend">
+          <span><span class="dot" style="background: var(--hub)"></span> Núcleo multi-tenant</span>
+          <span><span class="dot" style="background: var(--auth)"></span> Auth global</span>
+          <span><span class="dot" style="background: var(--int)"></span> Integrações</span>
+          <span><span class="dot" style="background: var(--fun)"></span> Funil &amp; leads</span>
+          <span><span class="dot" style="background: var(--crm)"></span> CRM</span>
+          <span><span class="dot" style="background: var(--msg)"></span> Conversas</span>
+        </div>
+      </header>
+
+      <p class="map-title">Mapa rápido — domínios em torno do tenant</p>
+      <div class="hub-map" aria-label="Mapa de domínios">
+        <div class="hub-cell c-auth p-tl">
+          <h3>Auth global</h3>
+          <div class="tables">users, roles, permissions, sessions, profiles, reset…</div>
+        </div>
+        <div class="hub-cell c-int p-tc">
+          <h3>Integrações</h3>
+          <div class="tables">integrations*, evolution, uazapi, typebot, Google/Meta/Clarity</div>
+        </div>
+        <div class="hub-cell c-snap p-tr">
+          <h3>Snapshots</h3>
+          <div class="tables">campaigns, funnel metrics, bot, instance, Meta &amp; Clarity insights</div>
+        </div>
+
+        <div class="hub-cell c-raw p-ml">
+          <h3>Raw / filas</h3>
+          <div class="tables">webhook events, sync logs</div>
+        </div>
+
+        <div class="hub-cell hub-center">
+          <div class="hub-badge">tenants</div>
+          <div class="hub-note">Raiz do isolamento por organização</div>
+        </div>
+
+        <div class="hub-cell c-ai p-mr">
+          <h3>IA &amp; alertas</h3>
+          <div class="tables">classifications, alerts, audit, KPI, failures</div>
+        </div>
+
+        <div class="hub-cell c-fun p-bl">
+          <h3>Funil</h3>
+          <div class="tables">funnels, steps, leads, events, UTM, follow-ups</div>
+        </div>
+        <div class="hub-cell c-crm p-bc">
+          <h3>CRM + conversas</h3>
+          <div class="tables">contacts, opportunities, products, conversations, messages</div>
+        </div>
+        <div class="hub-cell c-vys p-br">
+          <h3>Vysen</h3>
+          <div class="tables">knowledge_*, vysen_usage_events</div>
+        </div>
+      </div>
+
+      <p class="detail-title">Inventário completo por domínio</p>
+      <div class="domains">
+        <article class="domain" style="border-left: 4px solid var(--hub)">
+          <div class="domain-head">
+            <div>
+              <h2>Tenants</h2>
+              <p>Organização (cliente). Sem <code class="tn">tenant_id</code> — é a referência de escopo.</p>
+            </div>
+            <span class="scope global">Global</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">tenants</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--auth)">
+          <div class="domain-head">
+            <div>
+              <h2>Identidade &amp; acesso (RBAC)</h2>
+              <p>Papéis e permissões são catálogo global. <code class="tn">memberships</code> liga usuário ao tenant com um <code class="tn">role_id</code>.</p>
+            </div>
+            <span class="scope global">Global</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">users</code>
+              <code class="tn">memberships</code>
+              <code class="tn">roles</code>
+              <code class="tn">permissions</code>
+              <code class="tn">role_permissions</code>
+              <code class="tn">sessions</code>
+              <code class="tn">user_profiles</code>
+              <code class="tn">password_reset_tokens</code>
+            </div>
+            <p class="fk-note">
+              <strong>FKs:</strong> memberships → users, tenants, roles · sessions → users; opcional
+              <code class="tn">current_tenant_id</code> → tenants · user_profiles → users · password_reset_tokens → users
+            </p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid #64748b">
+          <div class="domain-head">
+            <div>
+              <h2>Config global da aplicação</h2>
+              <p>Chave/valor editável pela área de setup — não é escopado por tenant.</p>
+            </div>
+            <span class="scope global">Global</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">app_global_config</code>
+            </div>
+            <p class="fk-note">Opcional <code class="tn">updated_by</code> → <code class="tn">users</code>.</p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--app)">
+          <div class="domain-head">
+            <div>
+              <h2>App por tenant</h2>
+              <p>Recursos de produto e dados auxiliares escopados ao tenant.</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">internal_notifications</code>
+              <code class="tn">tenant_assets</code>
+              <code class="tn">onboarding_steps</code>
+              <code class="tn">tenant_onboarding_progress</code>
+              <code class="tn">pagespeed_results</code>
+              <code class="tn">complaints</code>
+            </div>
+            <p class="fk-note"><strong>Nota:</strong> <code class="tn">internal_notifications</code> também referencia <code class="tn">users</code> quando aplicável.</p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--int)">
+          <div class="domain-head">
+            <div>
+              <h2>Integrações</h2>
+              <p>
+                <code class="tn">integrations</code> agrega por provedor; o UUID da conexão real fica em
+                <code class="tn">provider_resource_id</code> (sem FK polimórfica no banco — validação na app).
+              </p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">integrations</code>
+              <code class="tn">evolution_instances</code>
+              <code class="tn">uazapi_instances</code>
+              <code class="tn">typebot_bots</code>
+              <code class="tn">google_ads_accounts</code>
+              <code class="tn">meta_ads_accounts</code>
+              <code class="tn">clarity_connections</code>
+            </div>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--raw)">
+          <div class="domain-head">
+            <div>
+              <h2>Eventos brutos &amp; logs de sync</h2>
+              <p>Ingestão de webhooks e jobs de sincronização; em geral append-only com marcação de processamento.</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">evolution_webhook_events</code>
+              <code class="tn">uazapi_webhook_events</code>
+              <code class="tn">typebot_webhook_events</code>
+              <code class="tn">google_ads_sync_logs</code>
+              <code class="tn">meta_ads_sync_logs</code>
+            </div>
+            <p class="fk-note">
+              Webhooks Evolution/UAZAPI referenciam a instância correspondente; logs Google/Meta ligam às contas quando aplicável.
+            </p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--fun)">
+          <div class="domain-head">
+            <div>
+              <h2>Funil &amp; leads</h2>
+              <p>Jornada comercial: funil, etapas, lead, eventos, atribuição UTM e follow-ups agendados.</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">funnels</code>
+              <code class="tn">funnel_steps</code>
+              <code class="tn">leads</code>
+              <code class="tn">lead_events</code>
+              <code class="tn">lead_sources</code>
+              <code class="tn">utm_attributions</code>
+              <code class="tn">followup_tasks</code>
+            </div>
+            <p class="fk-note">
+              <strong>FKs principais:</strong> funnel_steps → funnels · leads → funnels / funnel_steps / integrations (origem) ·
+              lead_events → leads · utm_attributions → leads · followup_tasks → leads (e opcional funnels).
+            </p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--crm)">
+          <div class="domain-head">
+            <div>
+              <h2>CRM</h2>
+              <p>Contatos, oportunidades e catálogo de produtos do tenant.</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">contacts</code>
+              <code class="tn">opportunities</code>
+              <code class="tn">products</code>
+            </div>
+            <p class="fk-note">
+              <strong>opportunities</strong> → leads, contacts, conversations (opcionais conforme o caso de uso).
+            </p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--msg)">
+          <div class="domain-head">
+            <div>
+              <h2>Conversas (inbox)</h2>
+              <p>Threads por instância WhatsApp (Evolution ou UAZAPI) e mensagens.</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">conversations</code>
+              <code class="tn">conversation_messages</code>
+            </div>
+            <p class="fk-note">
+              conversations → tenants, leads, contacts, evolution_instances / uazapi_instances · messages → conversations.
+            </p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--snap)">
+          <div class="domain-head">
+            <div>
+              <h2>Snapshots &amp; métricas materializadas</h2>
+              <p>Séries e agregados para dashboards (Google Ads, funil, bots, instâncias, Meta, Clarity).</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">campaign_snapshots</code>
+              <code class="tn">bot_metrics_snapshots</code>
+              <code class="tn">funnel_step_metrics_snapshot</code>
+              <code class="tn">instance_status_logs</code>
+              <code class="tn">meta_ads_insight_snapshots</code>
+              <code class="tn">clarity_insight_snapshots</code>
+            </div>
+            <p class="fk-note">campaign_snapshots → google_ads_accounts · meta/clarity insights → contas ou conexões correspondentes.</p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--ai)">
+          <div class="domain-head">
+            <div>
+              <h2>IA, alertas &amp; auditoria</h2>
+              <p>Classificação por conversa, regras de KPI, alertas e falhas de processamento.</p>
+            </div>
+            <span class="scope tenant">tenant_id</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">ai_classifications</code>
+              <code class="tn">alerts</code>
+              <code class="tn">audit_logs</code>
+              <code class="tn">kpi_rules</code>
+              <code class="tn">processing_failures</code>
+            </div>
+            <p class="fk-note">ai_classifications → conversations (e opcionalmente leads).</p>
+          </div>
+        </article>
+
+        <article class="domain" style="border-left: 4px solid var(--vys)">
+          <div class="domain-head">
+            <div>
+              <h2>Vysen (RAG &amp; uso)</h2>
+              <p>Definido nas migrations <code class="tn">0014</code>–<code class="tn">0015</code>; embeddings com extensão <code class="tn">pgvector</code>.</p>
+            </div>
+            <span class="scope tenant">tenant_id opcional</span>
+          </div>
+          <div class="domain-body">
+            <div class="table-list">
+              <code class="tn">knowledge_documents</code>
+              <code class="tn">knowledge_chunks</code>
+              <code class="tn">knowledge_embeddings</code>
+              <code class="tn">vysen_usage_events</code>
+            </div>
+            <p class="fk-note">
+              Cadeia: documents → chunks → embeddings (1 embedding por chunk). usage_events → tenants e opcionalmente users.
+            </p>
+          </div>
+        </article>
+      </div>
+
+      <footer>
+        Fonte: <code class="tn">src/db/schema/</code> e migrations em <code class="tn">src/db/migrations/</code>. RLS opcional em tabelas com
+        <code class="tn">tenant_id</code> (migration <code class="tn">0016</code>). Abra este arquivo direto no navegador ou imprima (Ctrl+P).
+      </footer>
+    </div>
+  </body>
+</html>

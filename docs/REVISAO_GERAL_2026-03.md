@@ -96,9 +96,9 @@ Garantir antes de `git push` (principalmente repositório **público**):
 | Dumps de banco (`*.dump`, `*.sql` com dados reais) | PII e segredos; adicionados padrões ao `.gitignore` para backups comuns. |
 | `pgdata/` | Dados locais do Postgres. |
 
-**Código:** fallback de e-mail em `mailer` não deve usar endereço de produção real; usar placeholder genérico se `SMTP_FROM` não estiver definido (ver commit associado a esta revisão).
+**Código:** fallback de `SMTP_FROM` em `mailer` quando a env não está definida: `hub@creativelane.io` (credenciais SMTP reais continuam no Portainer / `stack.env`).
 
-**Documentação:** exemplos em `.env.example`, `stack.env.example` e docs devem usar `exemplo.com` / `TROCAR_*`, não domínios reais de cliente.
+**Documentação:** URL pública do app nos templates: `https://app.vysen.com.br`. SMTP de exemplo: `hub@creativelane.io` (mesmo remetente operacional). White-label: `TROCAR_*`; não commitar segredos.
 
 ---
 

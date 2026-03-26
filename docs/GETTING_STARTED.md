@@ -38,7 +38,7 @@ Crie `.env` na raiz do projeto (ou `.env.local`; o Next.js carrega ambos). O scr
 
 ```env
 # Obrigatório
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/nome_do_banco
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/vysen
 SESSION_SECRET=uma-string-longa-aleatoria
 
 # Opcional (padrões)

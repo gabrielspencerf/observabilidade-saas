@@ -61,7 +61,7 @@ export async function requestPasswordResetByEmail(email: string): Promise<{ ok: 
   const token = await createPasswordResetTokenForUser(user.id);
   const link = buildResetLink(token);
   const hello = user.name?.trim() || user.email;
-  const subject = "Redefinição de senha — Creative Lane";
+  const subject = "Redefinição de senha — Vysen";
   const html = `
     <p>Olá, ${hello}.</p>
     <p>Recebemos um pedido para redefinir sua senha.</p>
@@ -93,7 +93,7 @@ export async function sendInitialAccessEmail(input: {
     subject,
     html: `
       <p>Olá, ${hello}.</p>
-      <p>Sua conta foi criada na plataforma Creative Lane.</p>
+      <p>Sua conta foi criada na plataforma Vysen.</p>
       <p><a href="${link}">Clique aqui para definir sua senha de acesso</a></p>
       <p>Este link expira em ${RESET_TTL_MINUTES} minutos.</p>
     `,

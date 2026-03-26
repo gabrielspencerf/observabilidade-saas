@@ -58,9 +58,9 @@ cp stack.env.example stack.env
 ```
 
 ```env
-APP_IMAGE=observabilidade-saas:v0.3.0
-APP_HOST=app.exemplo.com
-NEXT_PUBLIC_APP_URL=https://app.exemplo.com
+APP_IMAGE=ghcr.io/gabrielspencerf/observabilidade-saas:latest
+APP_HOST=app.vysen.com.br
+NEXT_PUBLIC_APP_URL=https://app.vysen.com.br
 POSTGRES_PASSWORD=troque-por-um-valor-forte
 SESSION_SECRET=troque-por-um-valor-longo-e-aleatorio
 TZ=America/Sao_Paulo

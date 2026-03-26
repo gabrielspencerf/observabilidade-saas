@@ -21,7 +21,7 @@ Defina no host (ou `stack.env` local do servidor):
 - `STACK_NAME` (default: `observabilidade`)
 - `POSTGRES_SERVICE` (default: `${STACK_NAME}_postgres`)
 - `POSTGRES_USER` (default: `postgres`)
-- `POSTGRES_DB` (default: `app`)
+- `POSTGRES_DB` (default: `vysen`)
 - `POSTGRES_VOLUME_NAME` (default: `app_postgres_data`)
 - `BACKUP_DIR` (default: `/var/backups/${STACK_NAME}`)
 - `BACKUP_RETENTION_DAYS` (default: `7`)

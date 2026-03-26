@@ -96,7 +96,7 @@ Em ambos os casos, a **lista de variáveis** é a mesma da seção 3.
 
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
-| `DATABASE_URL` | Connection string PostgreSQL | `postgresql://usuario:senha@localhost:5432/app` |
+| `DATABASE_URL` | Connection string PostgreSQL | `postgresql://usuario:senha@localhost:5432/vysen` |
 | `SESSION_SECRET` | Chave para assinar sessão/cookie; use valor longo e aleatório em produção | `openssl rand -hex 32` |
 
 ### Obrigatórias para webhooks, worker, rate-limit e observabilidade
@@ -111,7 +111,7 @@ Sem `REDIS_URL`, a app sobe, mas webhooks (Typebot/Evolution), worker, rate-limi
 
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
-| `NEXT_PUBLIC_APP_URL` | URL base da aplicação (redirects, OAuth, webhooks) | `https://seu-dominio.com` |
+| `NEXT_PUBLIC_APP_URL` | URL base da aplicação (redirects, OAuth, webhooks) | `https://app.vysen.com.br` |
 | `NODE_ENV` | `production` em produção | `production` |
 
 ### Setup inicial (seed) — obrigatórias para criar o primeiro admin
@@ -149,17 +149,17 @@ Não há variáveis de ambiente **por** bot ou instância. Cadastro é feito em 
 
 ```env
 # Mínimo
-DATABASE_URL=postgresql://user:pass@host:5432/app
+DATABASE_URL=postgresql://user:pass@host:5432/vysen
 SESSION_SECRET=<valor-longo-aleatorio>
 REDIS_URL=redis://host:6379
 
 # Setup inicial (uma vez)
 SEED_ADMIN_PASSWORD=<sua-senha-segura>
-SEED_ADMIN_EMAIL=admin@seudominio.com
+SEED_ADMIN_EMAIL=admin@app.vysen.com.br
 
 # Produção
 NODE_ENV=production
-NEXT_PUBLIC_APP_URL=https://seudominio.com
+NEXT_PUBLIC_APP_URL=https://app.vysen.com.br
 
 # Segurança (rollout)
 SECURITY_ENFORCE_RLS=false
@@ -206,7 +206,7 @@ O documento `docs/SETUP_BOOTSTRAP_ARCHITECTURE.md` descreve uma **proposta** de 
 4. [ ] `npm run build` → subir a app (`npm run start` ou PM2/systemd).
 5. [ ] Subir o worker em processo separado (`tsx src/workers/runner.ts` ou `npm run worker:dev`).
 6. [ ] Reverse proxy (Nginx/Caddy) com HTTPS apontando para a porta da app.
-7. [ ] Testar: `GET https://seu-dominio.com/api/health` (esperado: `db`, `redis`, `worker` ok).
+7. [ ] Testar: `GET https://app.vysen.com.br/api/health` (esperado: `db`, `redis`, `worker` ok).
 8. [ ] Login em `/admin-login` com o email/senha do seed; cadastrar Evolution em Admin → Integrações.
 
 Referência completa de variáveis e credenciais: `.env.example` e `docs/CONFIG_CREDENTIALS.md`. Passo a passo local: `docs/GETTING_STARTED.md`. **Deploy com Docker e Portainer:** `docs/DOCKER_PORTAINER.md`. Checklist de segurança: `docs/SECURITY_ACCEPTANCE_CHECKLIST.md`.
