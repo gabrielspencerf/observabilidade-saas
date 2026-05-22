@@ -40,6 +40,15 @@ export async function POST(request: NextRequest) {
 
   const tenantId = session.session.currentTenantId!;
 
+  // Reject early por Content-Length (multipart tem overhead pequeno, margem 64 KB).
+  const contentLength = Number(request.headers.get("content-length") ?? "0");
+  if (Number.isFinite(contentLength) && contentLength > MAX_FILE_SIZE + 64 * 1024) {
+    return NextResponse.json(
+      { error: `Arquivo muito grande. Máximo ${MAX_FILE_SIZE / 1024 / 1024} MB.` },
+      { status: 413 }
+    );
+  }
+
   let formData: FormData;
   try {
     formData = await request.formData();
