@@ -38,7 +38,7 @@ Crie `.env` na raiz do projeto (ou `.env.local`; o Next.js carrega ambos). O scr
 
 ```env
 # Obrigatório
-DATABASE_URL=postgresql://usuario:senha@localhost:5432/vysen
+DATABASE_URL=postgresql://usuario:senha@localhost:5432/app
 SESSION_SECRET=uma-string-longa-aleatoria
 
 # Opcional (padrões)
@@ -76,12 +76,23 @@ Ou, em desenvolvimento, se preferir sincronizar o schema direto sem arquivos de 
 npm run db:push
 ```
 
-Migrations existentes na pasta `src/db/migrations/`:
+As migrations atuais ficam em `src/db/migrations/` (0000 → 0020). Consulte
+diretamente a pasta para a lista canônica — ela é a fonte da verdade. Highlights
+até 2026-05:
 
-- `0000_concerned_blacklash.sql` — schema inicial (auth, integrations, raw-events, funnels-leads, conversations, snapshots, ai-alerts-audit).
-- `0001_google_ads_currency_code.sql` — coluna `currency_code` em `google_ads_accounts`.
-- `0002_app_global_config.sql` — tabela `app_global_config` (setup web).
-- `0003_hardening_integrations.sql` — hardening e integrações (UAZAPI, dedup raw events, campos de segurança/metrics Typebot).
+- **0000** schema inicial (auth, integrations, raw-events, funnels-leads, conversations).
+- **0001-0003** Google Ads currency, app_global_config, hardening de integrações.
+- **0004 / 0004b** UAZAPI, user_profiles, opportunities, contacts, products, complaints, tenant_assets etc.
+- **0005-0010** opportunities/contacts, onboarding, pagespeed, billing, uazapi_instance_id em conversations, sent_by_bot.
+- **0011-0013** password_reset_tokens, uazapi structured credentials, agent_notifications + followup_tasks.
+- **0014-0015** Vysen knowledge (pgvector) + vysen_usage_events.
+- **0016-0017** RLS por tenant + tenant_role_permissions.
+- **0018-0019** Meta Ads + Clarity, Chatwoot + WhatsApp Cloud.
+- **0020** `leads.status` ganhou DEFAULT 'new'.
+
+**Em Swarm/Kubernetes**, prefira `npm run db:migrate:safe` (wrapper com
+`pg_advisory_lock`) para evitar duas réplicas aplicando migrate ao mesmo tempo.
+Em dev local, `npm run db:migrate` direto funciona.
 
 ### 4. Seed (usuário e tenant iniciais)
 
@@ -92,6 +103,37 @@ npm run db:seed
 ```
 
 Exige `SEED_ADMIN_PASSWORD` (e opcionalmente `SEED_ADMIN_EMAIL`, `SEED_TENANT_NAME`, etc.). Idempotente: pode rodar mais de uma vez sem duplicar dados.
+
+### 4.1 Seed sintético mínimo de conversas (validação local)
+
+Após o seed base, para habilitar validação local de conversas/mensagens sem webhook real:
+
+```bash
+npm run db:seed:synthetic-conversations
+```
+
+Esse comando cria (de forma idempotente):
+
+- 1 `evolution_instance` sintética
+- 1 `uazapi_instance` sintética
+- 1 `chatwoot_account` sintética
+- 1 `whatsapp_cloud_number` sintética
+- 4 `conversations` (Evolution, UAZAPI, Chatwoot e WhatsApp Cloud)
+- 6 `conversation_messages`
+
+### 4.2 Smoke local dos canais nativos
+
+Com Postgres + Redis disponíveis e o seed executado, rode:
+
+```bash
+npm run smoke:channels
+```
+
+Esse smoke valida localmente:
+
+- Chatwoot: criação de conversa, dedup de mensagem, ignore de evento privado, `processing_error` e enqueue único de classificação
+- WhatsApp Cloud: criação de conversa, dedup de mensagem, `statuses` acknowledged, `processing_error` e enqueue único de classificação
+- Dashboard: `instanceDisplay` correto para Chatwoot e WhatsApp Cloud em listagem e detalhe
 
 ### 5. Subir a aplicação
 
@@ -108,7 +150,7 @@ A app estará em `http://localhost:3000` (ou na porta que o Next mostrar no term
 | Ação | Como verificar |
 |------|----------------|
 | App no ar | Abrir `http://localhost:3000` — landing com "Entrar na minha conta" e "Acesso administrador". |
-| Banco/infra ok | `GET http://localhost:3000/api/health` — resposta 200 com `{ "ok": true, "db": "ok", "redis": "ok", "worker": "ok" }`. |
+| Banco/infra ok | `GET http://localhost:3000/api/health` — público minimal, 200 com `{ "ok": true }` quando DB está acessível. Para detalhes operacionais (Redis, worker heartbeat) use `GET /api/health/details` com header `Authorization: Bearer <HEALTH_DETAILS_TOKEN>`. |
 | Login usuário | "Entrar na minha conta" → `/login`; email e senha do seed → redireciona para `/dashboard`. |
 | Login admin | "Acesso administrador" → `/admin-login`; só usuário super_admin entra; redireciona para `/admin`. |
 | Dashboard | Após login usuário: `/dashboard` → `/dashboard/context` (escolher tenant) ou `/dashboard/home`. Sidebar com Início, Comercial (Leads, Oportunidades, Produtos, Reclamações), Canais (Google Ads, Meta Ads, Clarity, WhatsApp) e Funil. |
@@ -132,7 +174,8 @@ Redis **não** é importado no startup da aplicação; só é usado quando algum
 - **Google Ads:** callback OAuth (`/api/google-ads/auth/callback`), sync (`/api/google-ads/sync/[accountId]`), estado pendente.
 - **Meta Ads:** callbacks e sync de snapshots/eventos por filas (`queue:meta-ads:*`).
 - **Clarity:** sync de snapshots por filas (`queue:clarity:*`).
-- **Webhooks:** ingest de Typebot e Evolution (enfileiramento de jobs).
+- **Webhooks:** ingest de Typebot, Evolution, UAZAPI, Chatwoot e WhatsApp Cloud (enfileiramento de jobs).
+- **Smoke de canais:** `npm run smoke:channels`.
 
 Para testes que envolvam apenas login, dashboard e admin, **Redis pode ficar em branco**.
 
@@ -221,7 +264,11 @@ Recarregue a página do Google Ads no dashboard após aplicar.
 
 ## Revisão geral, changelog e segurança no Git
 
-Para visão consolidada das evoluções recentes, variáveis de ambiente, logs, o que **não** versionar e checklist antes de push ao GitHub, use **[docs/REVISAO_GERAL_2026-03.md](REVISAO_GERAL_2026-03.md)**.
+Para visão consolidada da auditoria recente (32 findings tratados em 2026-05),
+incluindo top 12 críticos, hardening de auth/DB/webhook, refator de workers e
+infra Swarm com Docker secrets, use **[docs/REVISAO_GERAL_2026-05.md](REVISAO_GERAL_2026-05.md)**.
+
+Histórico anterior: [docs/REVISAO_GERAL_2026-03.md](REVISAO_GERAL_2026-03.md).
 
 ---
 

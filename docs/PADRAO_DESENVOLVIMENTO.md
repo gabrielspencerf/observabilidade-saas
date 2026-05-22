@@ -14,14 +14,24 @@ Documento canônico que define como o aplicativo é construído e mantido. **Tod
 
 ## 2. Rotas e sessões
 
-| Área | Entrada | Rotas | Quem acessa |
-|------|---------|--------|-------------|
-| **Público** | `/` | `/`, `/login`, `/admin-login`, `/forbidden` | Todos |
-| **Usuário** | `/login` → `/dashboard` | `/dashboard`, `/dashboard/home`, `/dashboard/leads`, etc. | Qualquer usuário com membership em algum tenant |
-| **Admin** | `/admin-login` → `/admin` | `/admin`, `/admin/integrations`, `/admin/observability`, `/admin/tenants`, `/admin/users` | Apenas `super_admin` |
+Existem **três grupos de rotas server-side** em `src/app/`, coexistindo intencionalmente:
+
+| Grupo (App Router) | Segmento URL | Entrada | Quem acessa |
+|---|---|---|---|
+| `(dashboard)` | `/dashboard/*` | `/login` → `/dashboard` | Usuário com membership em algum tenant |
+| `(admin)` (legado) | `/admin/*` | `/admin-login` → `/admin` | `super_admin` global. Em consolidação com `(superadmin)`. |
+| `(superadmin)` | `/superadmin/*` | `/admin-login` (mesmo) | `super_admin` global — área operacional consolidada (tenants, usuários, integrações, observabilidade, agente). |
+| `(company-admin)` | `/admin/*` | `/login` → `/admin` (do tenant) | Admin de um tenant específico (escopo limitado ao tenant atual). |
+
+> **Atenção — `/admin/*`** é segmento URL compartilhado por `(admin)` e
+> `(company-admin)`. O middleware roteia por sessão/role; quem é `super_admin`
+> global cai em `(admin)`/`(superadmin)`, quem é admin de tenant cai em
+> `(company-admin)`. Plano de longo prazo: descontinuar `(admin)` legado em
+> favor de `(superadmin)` + `(company-admin)` separados, conforme
+> [PLANO_EXECUCAO_UX_SUPERADMIN_ADMIN_DASHBOARD_2026-04.md](PLANO_EXECUCAO_UX_SUPERADMIN_ADMIN_DASHBOARD_2026-04.md).
 
 - **Landing (`/`):** Dois CTAs: "Entrar na minha conta" → `/login`, "Acesso administrador" → `/admin-login`.
-- **Middleware:** Protege `/dashboard/*` e `/admin/*`; redireciona para `/login` ou `/admin-login` conforme a rota. Rotas públicas: `/`, `/login`, `/admin-login`, `/forbidden`, `/api/auth/*`, `/api/health`.
+- **Middleware:** Protege `/dashboard/*`, `/admin/*` e `/superadmin/*`; redireciona para `/login` ou `/admin-login` conforme a rota. Rotas públicas: `/`, `/login`, `/admin-login`, `/forbidden`, `/api/auth/*`, `/api/health`.
 - **Não** exibir link para Admin dentro do dashboard do usuário.
 - **RBAC no dashboard:** Sessão + membership continua obrigatório; com **tenant selecionado**, o layout exige `dashboard:read`. As rotas em `/api/dashboard/*` aplicam permissões por recurso (`leads:*`, `funnels:*`, etc.) via `requireDashboardApiAuth` — ver [REVISAO_ACESSO_E_RBAC.md](REVISAO_ACESSO_E_RBAC.md). A sidebar ainda não oculta itens por permissão (melhoria de UX pendente).
 
@@ -53,13 +63,18 @@ src/
 │   │       ├── onboarding/
 │   │       ├── pagespeed/
 │   │       └── settings/
-│   └── (admin)/            # Grupo: rotas do admin
+│   ├── (admin)/            # LEGADO: hub super_admin antigo em /admin/* (em consolidação com (superadmin)/(company-admin))
+│   │   └── admin/
+│   │       ├── integrations/
+│   │       ├── observability/
+│   │       ├── tenants/
+│   │       ├── users/
+│   │       ├── worker-pipeline/
+│   │       └── agent/
+│   ├── (superadmin)/       # Hub consolidado de super_admin em /superadmin/*
+│   │   └── superadmin/     # Tenants, usuários, integrações, observabilidade, agente
+│   └── (company-admin)/    # Admin de tenant em /admin/* (escopo limitado ao tenant atual)
 │       └── admin/
-│           ├── page.tsx    # Hub (Integrações, Observabilidade, Tenants, Usuários)
-│           ├── integrations/
-│           ├── observability/
-│           ├── tenants/
-│           └── users/
 ├── components/
 │   ├── ui/                 # Primitivos: Button, Input, Card, Badge (Design System)
 │   ├── layout/             # Layout de páginas: DashboardPageLayout, PageSection, StatsRow, ListTableHeader, ListRowCard
