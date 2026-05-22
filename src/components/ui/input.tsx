@@ -10,7 +10,7 @@ const Input = React.forwardRef<HTMLInputElement, InputProps>(
     return (
       <input
         ref={ref}
-        className={`block w-full rounded-xl border bg-brand-surface/55 px-4 py-2.5 text-sm text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-neon/35 focus:border-brand-neon disabled:opacity-50 transition-all duration-200 backdrop-blur-sm ${
+        className={`block w-full rounded-xl border bg-brand-surface/55 px-4 py-2.5 text-[0.95rem] text-brand-text placeholder:text-brand-muted focus:outline-none focus:ring-2 focus:ring-brand-neon/35 focus:border-brand-neon disabled:opacity-50 transition-all duration-200 backdrop-blur-sm ${
           error
             ? "border-red-500 focus:border-red-500 focus:ring-red-500"
             : "border-brand-border"

@@ -1,7 +1,7 @@
 /**
- * Proteção básica de rotas: exige cookie de sessão em /dashboard e /admin.
- * Rotas públicas: /, /login, /api/auth/*, /api/health.
- * Não valida o conteúdo da sessão (apenas presença do cookie); validação real em getCurrentSession().
+ * Protecao basica de rotas: exige cookie de sessao em /dashboard, /admin e /superadmin.
+ * Rotas publicas: /, /login, /api/auth/*, /api/health.
+ * Nao valida o conteudo da sessao; a validacao real acontece nos layouts e APIs.
  */
 import { NextResponse, type NextRequest } from "next/server";
 
@@ -49,7 +49,7 @@ export function middleware(request: NextRequest) {
     }
   }
 
-  if (pathname.startsWith("/admin")) {
+  if (pathname.startsWith("/admin") || pathname.startsWith("/superadmin")) {
     if (!hasSessionCookie(request)) {
       return NextResponse.redirect(new URL("/admin-login", request.url));
     }
@@ -59,7 +59,5 @@ export function middleware(request: NextRequest) {
 }
 
 export const config = {
-  matcher: [
-    "/:path*",
-  ],
+  matcher: ["/:path*"],
 };

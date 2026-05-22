@@ -1,4 +1,16 @@
 export { requireAdmin } from "./require-admin";
+export { getAgencyPortfolioData } from "./agency-dashboard";
+export { getCompanyPortfolioData } from "./company-portfolio";
+export type {
+  AgencyPortfolioData,
+  AgencyPortfolioSummary,
+  AgencyPortfolioTenantRow,
+} from "./agency-dashboard";
+export type {
+  CompanyPortfolioData,
+  CompanyPortfolioSummary,
+  CompanyPortfolioTenantRow,
+} from "./company-portfolio";
 export {
   listTenants,
   getTenantById,

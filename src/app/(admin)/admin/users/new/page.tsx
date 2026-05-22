@@ -42,7 +42,7 @@ export default function NewUserPage() {
         setSubmitting(false);
         return;
       }
-      router.push("/admin/users");
+      router.push("/superadmin/users");
       router.refresh();
     } catch {
       setError("Erro de conexão");
@@ -55,7 +55,7 @@ export default function NewUserPage() {
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
       <div className="mb-6">
         <Link
-          href="/admin/users"
+          href="/superadmin/users"
           className="text-sm text-brand-muted hover:text-brand-text transition-colors"
         >
           ← Voltar
@@ -143,7 +143,7 @@ export default function NewUserPage() {
             >
             {submitting ? "Criando…" : "Criar"}
           </Button>
-          <Link href="/admin/users">
+          <Link href="/superadmin/users">
             <Button type="button" variant="secondary">Cancelar</Button>
           </Link>
         </div>

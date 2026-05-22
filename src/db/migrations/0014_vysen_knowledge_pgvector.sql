@@ -1,4 +1,10 @@
-CREATE EXTENSION IF NOT EXISTS vector;
+DO $$
+BEGIN
+  CREATE EXTENSION IF NOT EXISTS vector;
+EXCEPTION
+  WHEN OTHERS THEN
+    RAISE NOTICE 'Extensao vector indisponivel neste ambiente; objetos de embeddings serao ignorados.';
+END $$;
 --> statement-breakpoint
 CREATE TABLE IF NOT EXISTS "knowledge_documents" (
   "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
@@ -27,15 +33,24 @@ CREATE TABLE IF NOT EXISTS "knowledge_chunks" (
   "created_at" timestamp (6) with time zone DEFAULT now() NOT NULL
 );
 --> statement-breakpoint
-CREATE TABLE IF NOT EXISTS "knowledge_embeddings" (
-  "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
-  "chunk_id" uuid NOT NULL,
-  "tenant_id" uuid,
-  "scope" varchar(16) NOT NULL,
-  "embedding" vector(1536) NOT NULL,
-  "model" varchar(80) NOT NULL,
-  "created_at" timestamp (6) with time zone DEFAULT now() NOT NULL
-);
+DO $$
+BEGIN
+  IF EXISTS (SELECT 1 FROM pg_extension WHERE extname = 'vector') THEN
+    EXECUTE '
+      CREATE TABLE IF NOT EXISTS "knowledge_embeddings" (
+        "id" uuid PRIMARY KEY DEFAULT gen_random_uuid() NOT NULL,
+        "chunk_id" uuid NOT NULL,
+        "tenant_id" uuid,
+        "scope" varchar(16) NOT NULL,
+        "embedding" vector(1536) NOT NULL,
+        "model" varchar(80) NOT NULL,
+        "created_at" timestamp (6) with time zone DEFAULT now() NOT NULL
+      )
+    ';
+  ELSE
+    RAISE NOTICE 'Tabela knowledge_embeddings ignorada (vector indisponivel).';
+  END IF;
+END $$;
 --> statement-breakpoint
 DO $$ BEGIN
  ALTER TABLE "knowledge_documents"
@@ -65,19 +80,31 @@ EXCEPTION
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "knowledge_embeddings"
- ADD CONSTRAINT "knowledge_embeddings_chunk_id_knowledge_chunks_id_fk"
- FOREIGN KEY ("chunk_id") REFERENCES "public"."knowledge_chunks"("id")
- ON DELETE cascade ON UPDATE no action;
+ IF EXISTS (
+   SELECT 1
+   FROM information_schema.tables
+   WHERE table_schema = 'public' AND table_name = 'knowledge_embeddings'
+ ) THEN
+   ALTER TABLE "knowledge_embeddings"
+   ADD CONSTRAINT "knowledge_embeddings_chunk_id_knowledge_chunks_id_fk"
+   FOREIGN KEY ("chunk_id") REFERENCES "public"."knowledge_chunks"("id")
+   ON DELETE cascade ON UPDATE no action;
+ END IF;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
 --> statement-breakpoint
 DO $$ BEGIN
- ALTER TABLE "knowledge_embeddings"
- ADD CONSTRAINT "knowledge_embeddings_tenant_id_tenants_id_fk"
- FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id")
- ON DELETE cascade ON UPDATE no action;
+ IF EXISTS (
+   SELECT 1
+   FROM information_schema.tables
+   WHERE table_schema = 'public' AND table_name = 'knowledge_embeddings'
+ ) THEN
+   ALTER TABLE "knowledge_embeddings"
+   ADD CONSTRAINT "knowledge_embeddings_tenant_id_tenants_id_fk"
+   FOREIGN KEY ("tenant_id") REFERENCES "public"."tenants"("id")
+   ON DELETE cascade ON UPDATE no action;
+ END IF;
 EXCEPTION
  WHEN duplicate_object THEN null;
 END $$;
@@ -88,12 +115,39 @@ ON "knowledge_documents" USING btree ("scope","tenant_id","created_at");
 CREATE INDEX IF NOT EXISTS "knowledge_chunks_scope_tenant_idx"
 ON "knowledge_chunks" USING btree ("scope","tenant_id","document_id","chunk_index");
 --> statement-breakpoint
-CREATE UNIQUE INDEX IF NOT EXISTS "knowledge_embeddings_chunk_unique"
-ON "knowledge_embeddings" USING btree ("chunk_id");
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'knowledge_embeddings'
+  ) THEN
+    CREATE UNIQUE INDEX IF NOT EXISTS "knowledge_embeddings_chunk_unique"
+    ON "knowledge_embeddings" USING btree ("chunk_id");
+  END IF;
+END $$;
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "knowledge_embeddings_scope_tenant_idx"
-ON "knowledge_embeddings" USING btree ("scope","tenant_id","created_at");
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'knowledge_embeddings'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS "knowledge_embeddings_scope_tenant_idx"
+    ON "knowledge_embeddings" USING btree ("scope","tenant_id","created_at");
+  END IF;
+END $$;
 --> statement-breakpoint
-CREATE INDEX IF NOT EXISTS "knowledge_embeddings_vector_idx"
-ON "knowledge_embeddings" USING ivfflat ("embedding" vector_cosine_ops) WITH (lists = 100);
+DO $$
+BEGIN
+  IF EXISTS (
+    SELECT 1
+    FROM information_schema.tables
+    WHERE table_schema = 'public' AND table_name = 'knowledge_embeddings'
+  ) THEN
+    CREATE INDEX IF NOT EXISTS "knowledge_embeddings_vector_idx"
+    ON "knowledge_embeddings" USING ivfflat ("embedding" vector_cosine_ops) WITH (lists = 100);
+  END IF;
+END $$;
 

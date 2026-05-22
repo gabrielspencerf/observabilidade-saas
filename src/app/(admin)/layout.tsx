@@ -1,8 +1,7 @@
 import { redirect } from "next/navigation";
 import type { Metadata } from "next";
 import { getCurrentSession } from "@/server/auth";
-import { hasPermission } from "@/server/rbac";
-import { PERMISSION_SLUGS } from "@/server/rbac";
+import { hasPermission, PERMISSION_SLUGS } from "@/server/rbac";
 import { requestFromHeaders } from "@/server/request";
 import { headers } from "next/headers";
 import { AdminShell } from "@/components/admin-shell";
@@ -10,8 +9,8 @@ import { getSidebarInsightsForAdmin } from "@/server/sidebar/insights";
 
 export const metadata: Metadata = {
   title: {
-    default: "Admin",
-    template: "%s | Admin | Vysen",
+    default: "Superadmin legado",
+    template: "%s | Superadmin | Vysen",
   },
   robots: {
     index: false,
@@ -20,7 +19,7 @@ export const metadata: Metadata = {
   },
 };
 
-export default async function AdminLayout({
+export default async function LegacySuperadminLayout({
   children,
 }: {
   children: React.ReactNode;
@@ -44,6 +43,8 @@ export default async function AdminLayout({
       userEmail={session.user.email}
       userName={session.user.name}
       insights={insights}
+      variant="superadmin"
+      showVysen
     >
       {children}
     </AdminShell>

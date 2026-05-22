@@ -70,7 +70,7 @@ export default function TypebotMetricsPage() {
   return (
     <div className="p-6">
       <div className="mb-4">
-        <Link href="/admin/integrations" className="text-sm text-brand-neon hover:opacity-90">
+        <Link href="/superadmin/integrations" className="text-sm text-brand-neon hover:opacity-90">
           ← Voltar às integrações
         </Link>
       </div>

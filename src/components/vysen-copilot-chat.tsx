@@ -1,8 +1,9 @@
 "use client";
 
 import { useEffect, useMemo, useRef, useState } from "react";
-import { Bot, Loader2, SendHorizonal, User2 } from "lucide-react";
+import { Bot, Loader2, SendHorizontal, User2 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { useVysenChat } from "@/features/vysen-chat/use-vysen-chat";
 
 interface VysenCopilotChatProps {
   tenantId?: string | null;
@@ -11,23 +12,20 @@ interface VysenCopilotChatProps {
   description?: string;
 }
 
-interface ChatMessage {
-  role: "user" | "assistant";
-  text: string;
-}
-
 export function VysenCopilotChat({
   tenantId,
   endpoint = "/api/admin/vysen/chat",
   title = "Modo analítico",
   description = "Pergunte sobre gargalos, funil, campanhas e recomendações estratégicas.",
 }: VysenCopilotChatProps) {
-  const [messages, setMessages] = useState<ChatMessage[]>([]);
   const [question, setQuestion] = useState("");
-  const [loading, setLoading] = useState(false);
-  const [error, setError] = useState<string | null>(null);
   const messagesRef = useRef<HTMLDivElement | null>(null);
   const textareaRef = useRef<HTMLTextAreaElement | null>(null);
+  const { messages, loading, error, sendMessage } = useVysenChat({
+    endpoint,
+    tenantId,
+    storageKey: "vysen-copilot-chat",
+  });
 
   const quickPrompts = useMemo(
     () => [
@@ -50,30 +48,11 @@ export function VysenCopilotChat({
   async function ask(overrideQuestion?: string) {
     const nextQuestion = (overrideQuestion ?? question).trim();
     if (!nextQuestion || loading) return;
-    setLoading(true);
-    setError(null);
     setQuestion("");
     if (textareaRef.current) {
       textareaRef.current.style.height = "52px";
     }
-    setMessages((prev) => [...prev, { role: "user", text: nextQuestion }]);
-    try {
-      const response = await fetch(endpoint, {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ question: nextQuestion, tenantId }),
-      });
-      const data = (await response.json()) as { answer?: string; error?: string };
-      if (!response.ok || !data.answer) {
-        setError(data.error ?? "Falha ao consultar a Vysen.");
-        return;
-      }
-      setMessages((prev) => [...prev, { role: "assistant", text: data.answer ?? "" }]);
-    } catch {
-      setError("Falha de conexão ao consultar a Vysen.");
-    } finally {
-      setLoading(false);
-    }
+    await sendMessage(nextQuestion);
   }
 
   useEffect(() => {
@@ -182,7 +161,7 @@ export function VysenCopilotChat({
               size="sm"
               className="h-8 min-w-8 rounded-full px-2.5"
             >
-              <SendHorizonal className="h-3.5 w-3.5" />
+              <SendHorizontal className="h-3.5 w-3.5" />
             </Button>
           </div>
         </div>

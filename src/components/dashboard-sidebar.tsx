@@ -8,7 +8,7 @@
 import { usePathname } from "next/navigation";
 import Link from "next/link";
 import { useEffect, useRef, useState } from "react";
-import { ChevronUp, LifeBuoy, LogOut, ShieldCheck, UserCircle2 } from "lucide-react";
+import { ChevronUp, LifeBuoy, LogOut, UserCircle2 } from "lucide-react";
 import { DashboardNotificationBell } from "@/components/dashboard-notification-bell";
 import { SidebarNavSections } from "@/components/sidebar-nav-sections";
 import { SidebarInsightsCarousel } from "@/components/sidebar-insights-carousel";
@@ -20,7 +20,6 @@ interface DashboardSidebarProps {
   userEmail: string;
   userName?: string | null;
   userAvatarUrl?: string | null;
-  showAdminLink?: boolean;
   insights: SidebarInsightsPayload;
   hideNotificationBell?: boolean;
 }
@@ -29,7 +28,6 @@ export function DashboardSidebar({
   userEmail,
   userName,
   userAvatarUrl = null,
-  showAdminLink = false,
   insights,
   hideNotificationBell = false,
 }: DashboardSidebarProps) {
@@ -195,17 +193,6 @@ export function DashboardSidebar({
                     <UserCircle2 className="h-4 w-4 text-brand-muted" aria-hidden />
                     <span>Meu perfil</span>
                   </Link>
-                {showAdminLink && (
-                  <Link
-                    href="/admin"
-                    role="menuitem"
-                    onClick={() => setProfileMenuOpen(false)}
-                    className="fx-button mb-1.5 inline-flex w-full items-center gap-2 rounded-lg border border-brand-neon/25 bg-brand-neon/5 px-3 py-2 text-xs font-semibold text-brand-neon transition-colors hover:bg-brand-neon/10"
-                  >
-                    <ShieldCheck className="h-4 w-4" aria-hidden />
-                    <span>Perfil Super Admin</span>
-                  </Link>
-                )}
                 <Link
                   href="/dashboard/support"
                   role="menuitem"

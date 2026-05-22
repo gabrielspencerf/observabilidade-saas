@@ -73,7 +73,7 @@ export function MobileSidebarDrawer({
         Em telas maiores o shell usa sidebar fixa.
       */}
       <div
-        className="pointer-events-none fixed right-3 z-40 flex max-w-[calc(100vw-1.5rem)] justify-end md:hidden"
+        className="vysen-layer-fab pointer-events-none fixed right-3 flex max-w-[calc(100vw-1.5rem)] justify-end md:hidden"
         style={{ top: "max(0.75rem, env(safe-area-inset-top, 0px))" }}
       >
         <div className="pointer-events-auto flex items-center gap-0.5 rounded-xl border border-brand-border bg-brand-surface/95 px-1 py-1 shadow-lg backdrop-blur-sm ring-1 ring-brand-neon/10">
@@ -91,7 +91,7 @@ export function MobileSidebarDrawer({
       </div>
 
       {isOpen && (
-        <div className="fixed inset-0 z-50 flex md:hidden">
+        <div className="vysen-layer-dock fixed inset-0 flex md:hidden">
           <div
             className={`fixed inset-0 bg-black/60 backdrop-blur-sm transition-opacity duration-300 ${
               isAnimatingOpen ? "opacity-100" : "opacity-0"

@@ -16,8 +16,8 @@ const variants = {
 };
 
 const sizes = {
-  sm: "rounded-xl px-4 py-2 text-xs font-medium uppercase tracking-wider",
-  md: "rounded-xl px-5 py-2.5 text-sm font-medium",
+  sm: "rounded-xl px-4 py-2 text-sm font-medium",
+  md: "rounded-xl px-5 py-2.5 text-[0.95rem] font-medium",
   lg: "rounded-xl px-8 py-3.5 text-base font-medium",
 };
 

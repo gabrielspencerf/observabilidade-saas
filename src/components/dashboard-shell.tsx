@@ -15,7 +15,6 @@ interface DashboardShellProps {
   userEmail: string;
   userName?: string | null;
   userAvatarUrl?: string | null;
-  showAdminLink?: boolean;
   insights: SidebarInsightsPayload;
   children: React.ReactNode;
 }
@@ -25,19 +24,17 @@ export function DashboardShell({
   userEmail,
   userName,
   userAvatarUrl,
-  showAdminLink = false,
   insights,
   children,
 }: DashboardShellProps) {
   return (
     <div className="flex min-h-screen flex-col bg-brand-dark md:flex-row">
       {/* Sidebar: desktop */}
-      <div className="fixed left-0 top-0 z-30 hidden h-screen w-[248px] md:block">
+      <div className="vysen-layer-sidebar fixed left-0 top-0 hidden h-screen w-[248px] md:block">
         <DashboardSidebar
           userEmail={userEmail}
           userName={userName}
           userAvatarUrl={userAvatarUrl}
-          showAdminLink={showAdminLink}
           insights={insights}
         />
       </div>
@@ -49,7 +46,6 @@ export function DashboardShell({
         userEmail={userEmail}
         userName={userName}
         userAvatarUrl={userAvatarUrl}
-        showAdminLink={showAdminLink}
         insights={insights}
       />
 

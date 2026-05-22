@@ -39,7 +39,7 @@ flowchart LR
 **Fluxo resumido:**
 
 - Usuário acessa a app → Next.js; login/sessão e dados vêm do PostgreSQL.
-- Webhooks (Typebot/Evolution) chegam nas rotas `/api/webhooks/*` → validam, gravam evento no PostgreSQL e enfileiram job no Redis.
+- Webhooks (Typebot/Evolution/UAZAPI/Chatwoot/WhatsApp Cloud) chegam nas rotas `/api/webhooks/*` → validam, gravam evento no PostgreSQL e enfileiram job no Redis.
 - O **worker** faz BRPOP nas filas, processa o job (lead, conversa, etc.) e atualiza o PostgreSQL; em falha faz retry e depois manda para DLQ.
 - Health check (`/api/health`) testa PostgreSQL, Redis e idade do heartbeat do worker.
 
@@ -104,8 +104,9 @@ Em ambos os casos, a **lista de variáveis** é a mesma da seção 3.
 | Variável | Descrição | Exemplo |
 |----------|-----------|---------|
 | `REDIS_URL` | URL do Redis (filas, heartbeat, rate-limit) | `redis://localhost:6379` |
+| `META_APP_SECRET` | App Secret da Meta para validar `X-Hub-Signature-256` no WhatsApp Cloud | `app-secret-da-meta` |
 
-Sem `REDIS_URL`, a app sobe, mas webhooks (Typebot/Evolution), worker, rate-limit e health do worker não funcionam corretamente.
+Sem `REDIS_URL`, a app sobe, mas webhooks (Typebot/Evolution/UAZAPI/Chatwoot/WhatsApp Cloud), worker, rate-limit e health do worker não funcionam corretamente.
 
 ### Recomendadas em produção
 
@@ -163,6 +164,7 @@ NEXT_PUBLIC_APP_URL=https://app.vysen.com.br
 
 # Segurança (rollout)
 SECURITY_ENFORCE_RLS=false
+WORKER_DB_ACCESS_MODE=off
 SECURITY_ENFORCE_CSRF=false
 SECURITY_STRICT_REDIRECTS=true
 SECURITY_ALLOW_PLAINTEXT_SECRETS=false
@@ -172,6 +174,9 @@ RATE_LIMIT_TRUSTED_PROXY_HOPS=1
 
 # Se for cadastrar Evolution/UAZAPI/Typebot com API key ou token
 INTEGRATIONS_ENCRYPTION_KEY=<32-bytes-hex-ou-base64>
+
+# Se for usar WhatsApp Cloud em staging/producao
+META_APP_SECRET=<app-secret-da-meta>
 ```
 
 ### Proxy e IP confiável
@@ -179,6 +184,85 @@ INTEGRATIONS_ENCRYPTION_KEY=<32-bytes-hex-ou-base64>
 - Se `RATE_LIMIT_TRUSTED_PROXY_HOPS > 0`, a app usa `X-Forwarded-For` para compor chave de rate-limit.
 - Garanta que o proxy **sempre sobrescreve** `X-Forwarded-For` e `X-Real-IP` (não confiar em header vindo direto da internet).
 - Em rollout inicial, mantenha `RATE_LIMIT_TRUSTED_PROXY_HOPS=0` até validar cabeçalhos em produção.
+
+### Rollout seguro de RLS por ambiente
+
+- **Dev (primeira ativação):**
+  - `SECURITY_ENFORCE_RLS=true`
+  - `WORKER_DB_ACCESS_MODE=bypass`
+  - Rodar: `npm run typecheck`, `npm run smoke:web`, `npm run smoke:api`, `npm run smoke:worker`, `npm run smoke:channels`.
+- **Staging (pré-produção):**
+  - Manter `SECURITY_ENFORCE_RLS=true` e `WORKER_DB_ACCESS_MODE=bypass`.
+  - Validar `/api/health`, Admin → Observability e execução real de pelo menos 1 sync por integração ativa.
+  - Reexecutar precheck `0019_chatwoot_whatsapp_cloud_channels.sql` antes de promover os novos canais.
+  - Validar um payload real de Chatwoot e um de WhatsApp Cloud com credenciais/segredos reais.
+- **Produção (janela controlada):**
+  - Ligar as mesmas flags fora de pico.
+  - Monitorar DLQs + `processing_failures` por 30-60 min.
+
+**Rollback mínimo:** voltar `SECURITY_ENFORCE_RLS=false` se houver aumento anormal de erros de autorização/tenant, crescimento acelerado de DLQ ou falhas persistentes de sync/worker após a ativação.
+
+### Execução operacional em staging (checklist curto)
+
+1. Aplicar flags no `.env` de staging:
+   - `SECURITY_ENFORCE_RLS=true`
+   - `WORKER_DB_ACCESS_MODE=bypass`
+2. Reiniciar app e worker.
+3. Verificar startup do worker:
+   - log esperado com `securityEnforceRls: true` e `workerDbAccessMode: "bypass"`.
+4. Executar trilha mínima:
+   - `GET /api/health`
+   - 1 webhook real (ou evento equivalente) por integração ativa
+   - 1 sync manual por integração ativa no dashboard
+   - 1 evento real Chatwoot e 1 evento real WhatsApp Cloud, se os canais estiverem habilitados
+5. Observar 30 minutos:
+   - DLQs
+   - `processing_failures`
+   - erros de auth/tenant nos logs
+6. Registrar evidência em `docs/log/REGISTRO.md` com decisão **go/no-go**.
+
+### Protocolo auditável da janela (T0 / T+15 / T+30)
+
+- **T0 (ativação):**
+  - registrar timestamp e configuração aplicada;
+  - coletar `GET /api/health` (incluindo `worker`, `workerHeartbeatAgeMs`, `workerLastHeartbeatAt`);
+  - registrar baseline de filas e DLQ na tela de Observability.
+- **T+15 minutos:**
+  - repetir coleta de health;
+  - repetir leitura de filas/DLQ;
+  - registrar erros recentes e `processing_failures`.
+- **T+30 minutos:**
+  - repetir coleta de health;
+  - repetir leitura de filas/DLQ;
+  - consolidar decisão de go/no-go.
+
+Consulta sugerida para `processing_failures` (staging):
+
+```sql
+select job_type, count(*) as failures
+from processing_failures
+where failed_at >= now() - interval '30 minutes'
+group by job_type
+order by failures desc;
+```
+
+Critério objetivo para **go**:
+- health estável (`ok=true`) em toda a janela;
+- worker com heartbeat válido na janela;
+- DLQ sem crescimento contínuo até T+30;
+- sem recorrência regressiva relevante em `processing_failures`.
+
+Critério objetivo para **no-go**:
+- qualquer `health` com 503;
+- worker `stale/missing/error` em duas coletas seguidas;
+- crescimento contínuo de DLQ sem estabilização;
+- recorrência de falha por `job_type` indicando regressão pós-ativação.
+
+**Rollback operacional (staging):**
+- Voltar `SECURITY_ENFORCE_RLS=false`;
+- Manter `WORKER_DB_ACCESS_MODE=bypass` ou `off` conforme política local;
+- Reiniciar app/worker;
+- Revalidar `GET /api/health` e fluxo mínimo de webhook/sync.
 
 ---
 
@@ -201,7 +285,7 @@ O documento `docs/SETUP_BOOTSTRAP_ARCHITECTURE.md` descreve uma **proposta** de 
 ## 5. Checklist rápido para VPS
 
 1. [ ] PostgreSQL e Redis instalados/rodando na VPS (ou acessíveis).
-2. [ ] `.env` criado com `DATABASE_URL`, `SESSION_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_APP_URL`, `SEED_ADMIN_PASSWORD` (e opcionalmente `INTEGRATIONS_ENCRYPTION_KEY`).
+2. [ ] `.env` criado com `DATABASE_URL`, `SESSION_SECRET`, `REDIS_URL`, `NEXT_PUBLIC_APP_URL`, `SEED_ADMIN_PASSWORD`, `META_APP_SECRET` se houver WhatsApp Cloud (e opcionalmente `INTEGRATIONS_ENCRYPTION_KEY`).
 3. [ ] `npm run db:create` → `npm run db:migrate` → `npm run db:seed`.
 4. [ ] `npm run build` → subir a app (`npm run start` ou PM2/systemd).
 5. [ ] Subir o worker em processo separado (`tsx src/workers/runner.ts` ou `npm run worker:dev`).

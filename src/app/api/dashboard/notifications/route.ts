@@ -2,6 +2,7 @@ import { NextRequest, NextResponse } from "next/server";
 import { requireDashboardApiAuth } from "@/server/dashboard/api-auth";
 import { dashboardApiAuthErrorResponse } from "@/server/dashboard/api-route-errors";
 import { PERMISSION_SLUGS } from "@/server/rbac";
+import { apiError, apiOk } from "@/server/http/api-contract";
 import {
   listInternalNotificationsForUser,
   markInternalNotificationsAsRead,
@@ -82,19 +83,18 @@ export async function GET(request: NextRequest) {
       limit: 100,
     });
 
-    return NextResponse.json({ notifications });
+    return apiOk({ notifications });
   } catch (e) {
     const pgCode = pickPgCodeDeep(e);
     const fullMessage = collectErrorMessages(e);
 
     if (isMissingAgentNotificationsSchema(pgCode, fullMessage)) {
-      return NextResponse.json({ error: NOTIFICATIONS_SCHEMA_HINT }, { status: 503 });
+      return apiError("schema_missing", NOTIFICATIONS_SCHEMA_HINT, { status: 503 });
     }
 
-    return NextResponse.json(
-      { error: "Erro interno ao listar notificações." },
-      { status: 500 }
-    );
+    return apiError("notifications_list_failed", "Erro interno ao listar notificações.", {
+      status: 500,
+    });
   }
 }
 
@@ -111,7 +111,7 @@ export async function PATCH(request: NextRequest) {
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+    return apiError("invalid_body", "Corpo inválido", { status: 400 });
   }
 
   const ids = Array.isArray(body.ids)
@@ -129,14 +129,13 @@ export async function PATCH(request: NextRequest) {
     const fullMessage = collectErrorMessages(e);
 
     if (isMissingAgentNotificationsSchema(pgCode, fullMessage)) {
-      return NextResponse.json({ error: NOTIFICATIONS_SCHEMA_HINT }, { status: 503 });
+      return apiError("schema_missing", NOTIFICATIONS_SCHEMA_HINT, { status: 503 });
     }
 
-    return NextResponse.json(
-      { error: "Erro interno ao atualizar notificações." },
-      { status: 500 }
-    );
+    return apiError("notifications_update_failed", "Erro interno ao atualizar notificações.", {
+      status: 500,
+    });
   }
 
-  return NextResponse.json({ ok: true });
+  return apiOk({ acknowledged: true });
 }

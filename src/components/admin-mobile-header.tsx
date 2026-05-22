@@ -8,16 +8,25 @@ interface AdminMobileHeaderProps {
   userEmail: string;
   userName?: string | null;
   insights: SidebarInsightsPayload;
+  variant?: "admin" | "superadmin";
 }
 
 export function AdminMobileHeader({
   userEmail,
   userName,
   insights,
+  variant = "superadmin",
 }: AdminMobileHeaderProps) {
   return (
-    <MobileSidebarDrawer menuAriaLabel="Abrir menu de administração">
-      <AdminSidebar userEmail={userEmail} userName={userName} insights={insights} />
+    <MobileSidebarDrawer
+      menuAriaLabel={variant === "admin" ? "Abrir menu da empresa" : "Abrir menu de superadmin"}
+    >
+      <AdminSidebar
+        userEmail={userEmail}
+        userName={userName}
+        insights={insights}
+        variant={variant}
+      />
     </MobileSidebarDrawer>
   );
 }

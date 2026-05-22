@@ -546,7 +546,7 @@ html.light .dashboard-grain {
   display: inline-flex;
   align-items: center;
   gap: 0.4rem;
-  font-size: 0.68rem;
+  font-size: 0.75rem;
   font-weight: 600;
   text-transform: uppercase;
   letter-spacing: 0.12em;
@@ -569,8 +569,8 @@ html.light .dashboard-grain {
   border: 1px solid rgb(var(--color-brand-border));
   background: rgb(var(--color-brand-surface) / 0.65);
   padding: 0.22rem 0.62rem;
-  font-size: 0.7rem;
-  line-height: 1rem;
+  font-size: 0.78rem;
+  line-height: 1.12rem;
   font-weight: 500;
   color: rgb(var(--color-brand-muted));
 }
@@ -815,7 +815,7 @@ html.light .landing-panel {
   border: 1px solid rgb(var(--color-brand-border));
   background: rgb(var(--color-brand-surface));
   padding: 0.62rem 2.35rem 0.62rem 0.82rem;
-  font-size: 0.875rem;
+  font-size: 0.94rem;
   color: rgb(var(--color-brand-text));
   appearance: none;
   background-image:
@@ -850,8 +850,8 @@ html.light .landing-panel {
   background: rgb(var(--color-brand-surface) / 0.7);
   color: rgb(var(--color-brand-text));
   padding: 0.72rem 0.88rem;
-  font-size: 0.875rem;
-  line-height: 1.35rem;
+  font-size: 0.94rem;
+  line-height: 1.5rem;
   transition: border-color 0.2s ease, box-shadow 0.2s ease, background-color 0.2s ease;
 }
 .app-textarea:focus {
@@ -935,4 +935,50 @@ body::-webkit-scrollbar-thumb {
   transform: translateY(-1px);
   border-color: rgb(var(--color-brand-neon) / 0.35);
   box-shadow: 0 10px 18px -16px rgba(var(--color-brand-neon), 0.45);
+}
+
+/* Contrato visual da Vysen: camadas e superfícies */
+.vysen-layer-sidebar {
+  z-index: 30;
+}
+.vysen-layer-fab {
+  z-index: 40;
+}
+.vysen-layer-dock {
+  z-index: 50;
+}
+.vysen-layer-overlay {
+  z-index: 60;
+}
+.vysen-layer-context {
+  z-index: 70;
+}
+.vysen-layer-modal {
+  z-index: 999;
+}
+
+.vysen-surface-solid {
+  background: rgb(var(--color-brand-surface));
+  border: 1px solid rgb(var(--color-brand-border));
+}
+
+.vysen-surface-floating {
+  border: 1px solid rgb(var(--color-brand-border));
+  box-shadow: 0 18px 44px rgba(0, 0, 0, 0.24);
+  backdrop-filter: saturate(140%) blur(14px);
+  -webkit-backdrop-filter: saturate(140%) blur(14px);
+}
+
+html.light .vysen-surface-floating {
+  background: rgb(var(--color-brand-surface) / 0.78);
+}
+
+html.dark .vysen-surface-floating {
+  background: rgb(var(--color-brand-surface) / 0.68);
+}
+
+.vysen-surface-dropdown {
+  background: rgb(var(--color-brand-surface));
+  border: 1px solid rgb(var(--color-brand-border));
+  box-shadow: 0 24px 56px rgba(0, 0, 0, 0.16);
 }

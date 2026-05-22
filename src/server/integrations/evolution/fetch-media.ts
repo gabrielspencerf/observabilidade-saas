@@ -3,11 +3,20 @@
  * Usado pelo worker para obter o arquivo de áudio e enviar ao Whisper.
  */
 
+import {
+  allowedHostsFromIntegrationBaseUrl,
+  safeFetch,
+} from "@/server/security/safe-fetch";
+
 export interface FetchEvolutionMediaInput {
   baseUrl: string;
   instanceName: string;
   apiKey: string | null;
   messageId: string;
+}
+
+function normalizeBaseUrl(baseUrl: string): string {
+  return baseUrl.replace(/\/$/, "");
 }
 
 /**
@@ -16,7 +25,15 @@ export interface FetchEvolutionMediaInput {
 export async function fetchEvolutionMediaAsBuffer(
   input: FetchEvolutionMediaInput
 ): Promise<{ buffer: Buffer; mimeType?: string } | null> {
-  const url = `${input.baseUrl.replace(/\/$/, "")}/chat/getBase64FromMediaMessage/${encodeURIComponent(input.instanceName)}`;
+  const baseNorm = normalizeBaseUrl(input.baseUrl);
+  const base = new URL(
+    baseNorm.includes("://") ? `${baseNorm}/` : `https://${baseNorm}/`
+  );
+  const url = new URL(
+    `chat/getBase64FromMediaMessage/${encodeURIComponent(input.instanceName)}`,
+    base
+  );
+  const allowedHosts = allowedHostsFromIntegrationBaseUrl(input.baseUrl);
   const headers: Record<string, string> = {
     "Content-Type": "application/json",
   };
@@ -25,13 +42,16 @@ export async function fetchEvolutionMediaAsBuffer(
   }
 
   try {
-    const res = await fetch(url, {
+    const res = await safeFetch(url.toString(), {
       method: "POST",
       headers,
       body: JSON.stringify({
         message: { key: { id: input.messageId } },
         convertToMp4: false,
       }),
+      allowedHosts,
+      timeoutMs: 20_000,
+      maxRedirects: 2,
     });
 
     if (!res.ok) {

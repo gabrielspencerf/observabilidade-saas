@@ -58,7 +58,7 @@ export default function NewTenantPage() {
         setError(data.error ?? "Erro ao criar tenant");
         return;
       }
-      router.push("/admin/tenants");
+      router.push("/superadmin/tenants");
       router.refresh();
     } catch {
       setError("Erro de conexão");
@@ -71,7 +71,7 @@ export default function NewTenantPage() {
     <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
       <div className="mb-6">
         <Link
-          href="/admin/tenants"
+          href="/superadmin/tenants"
           className="text-sm text-brand-muted hover:text-brand-text transition-colors"
         >
           ← Voltar
@@ -186,7 +186,7 @@ export default function NewTenantPage() {
             >
             {submitting ? "Criando…" : "Criar"}
           </Button>
-          <Link href="/admin/tenants">
+          <Link href="/superadmin/tenants">
             <Button type="button" variant="secondary">Cancelar</Button>
           </Link>
         </div>

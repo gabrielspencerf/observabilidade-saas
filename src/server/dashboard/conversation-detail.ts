@@ -1,6 +1,6 @@
 /**
  * Detalhe de conversa por tenant. Retorna null se a conversa não existir ou não pertencer ao tenant.
- * Suporta conversas de Evolution e UAZAPI.
+ * Suporta Evolution, UAZAPI, Chatwoot e WhatsApp Cloud.
  */
 
 import { and, asc, eq } from "drizzle-orm";
@@ -10,6 +10,8 @@ import {
   conversationMessages,
   evolutionInstances,
   uazapiInstances,
+  chatwootAccounts,
+  whatsappCloudNumbers,
   leads,
   aiClassifications,
 } from "@/db/schema";
@@ -62,6 +64,11 @@ export async function getConversationDetailForTenant(
       evolutionInstanceExternalId: evolutionInstances.externalId,
       uazapiInstanceName: uazapiInstances.instanceName,
       uazapiInstanceExternalId: uazapiInstances.externalId,
+      chatwootAccountLabel: chatwootAccounts.label,
+      chatwootAccountExternalId: chatwootAccounts.externalId,
+      wcNumberLabel: whatsappCloudNumbers.label,
+      wcDisplayPhone: whatsappCloudNumbers.displayPhone,
+      wcPhoneNumberId: whatsappCloudNumbers.phoneNumberId,
       leadName: leads.name,
       leadEmail: leads.email,
       leadPhone: leads.phone,
@@ -74,6 +81,14 @@ export async function getConversationDetailForTenant(
     .leftJoin(
       uazapiInstances,
       eq(conversations.uazapiInstanceId, uazapiInstances.id)
+    )
+    .leftJoin(
+      chatwootAccounts,
+      eq(conversations.chatwootAccountId, chatwootAccounts.id)
+    )
+    .leftJoin(
+      whatsappCloudNumbers,
+      eq(conversations.whatsappCloudNumberId, whatsappCloudNumbers.id)
     )
     .leftJoin(leads, eq(conversations.leadId, leads.id))
     .where(
@@ -125,7 +140,19 @@ export async function getConversationDetailForTenant(
     (row.uazapiInstanceName && row.uazapiInstanceName.trim()) ||
     row.uazapiInstanceExternalId ||
     "";
-  const instanceDisplay = evolutionDisplay || uazapiDisplay || row.id;
+  const chatwootTail =
+    (row.chatwootAccountLabel && row.chatwootAccountLabel.trim()) ||
+    row.chatwootAccountExternalId ||
+    "";
+  const chatwootDisplay = chatwootTail ? `Chatwoot · ${chatwootTail}` : "";
+  const wcTail =
+    (row.wcNumberLabel && row.wcNumberLabel.trim()) ||
+    row.wcDisplayPhone ||
+    row.wcPhoneNumberId ||
+    "";
+  const wcDisplay = wcTail ? `WhatsApp · ${wcTail}` : "";
+  const instanceDisplay =
+    evolutionDisplay || uazapiDisplay || chatwootDisplay || wcDisplay || row.id;
 
   return {
     id: row.id,

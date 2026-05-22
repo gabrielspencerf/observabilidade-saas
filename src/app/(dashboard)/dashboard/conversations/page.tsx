@@ -1,6 +1,6 @@
-import Link from "next/link";
-import { MessageSquare, MousePointerClick } from "lucide-react";
+import { MousePointerClick } from "lucide-react";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LinkButton } from "@/components/ui";
 
 /**
  * Estado inicial sem conversa selecionada: sem segundo título (evita duplicar o cabeçalho da lista).
@@ -13,12 +13,13 @@ export default function DashboardConversationsPage() {
         description="Escolha um contato na lista ao lado para ver mensagens, mídias e o resumo por IA. Em telas pequenas, a lista fica acima — role até o histórico abaixo."
         icon={<MousePointerClick className="h-10 w-10 opacity-80" />}
         action={
-          <Link
+          <LinkButton
             href="/dashboard/leads"
-            className="fx-button btn-outline inline-flex items-center justify-center rounded-xl px-4 py-2 text-xs font-medium uppercase tracking-wider transition-colors hover:bg-brand-surface"
+            variant="outline"
+            size="sm"
           >
             Ver leads
-          </Link>
+          </LinkButton>
         }
       />
     </div>

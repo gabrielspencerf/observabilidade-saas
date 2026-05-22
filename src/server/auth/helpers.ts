@@ -5,7 +5,10 @@
 import { getSessionFromCookie } from "./session";
 import type { SessionWithUserAndTenant } from "./session";
 import { shouldRequireCsrf, validateCsrfRequest } from "@/server/security/csrf";
-import { setDbAccessContext } from "@/server/db/access-context";
+import {
+  runWithRlsContext,
+  applyRlsToCurrentTransaction,
+} from "@/server/db/access-context";
 
 /**
  * Retorna a sessão atual (user + tenant) a partir do cookie da request.
@@ -14,17 +17,15 @@ import { setDbAccessContext } from "@/server/db/access-context";
 export async function getCurrentSession(
   request: Request | null
 ): Promise<SessionWithUserAndTenant | null> {
-  await setDbAccessContext({
-    tenantId: null,
-    bypassRls: false,
+  return runWithRlsContext({ tenantId: null, bypassRls: false }, async () => {
+    const session = await getSessionFromCookie(request, { updateActivity: true });
+    if (!session) return null;
+    await applyRlsToCurrentTransaction({
+      tenantId: session.session.currentTenantId,
+      bypassRls: false,
+    });
+    return session;
   });
-  const session = await getSessionFromCookie(request, { updateActivity: true });
-  if (!session) return null;
-  await setDbAccessContext({
-    tenantId: session.session.currentTenantId,
-    bypassRls: false,
-  });
-  return session;
 }
 
 /**
@@ -42,31 +43,28 @@ export async function getCurrentUser(request: Request | null) {
 export async function requireAuth(
   request: Request | null
 ): Promise<SessionWithUserAndTenant> {
-  await setDbAccessContext({
-    tenantId: null,
-    bypassRls: false,
-  });
-
-  const session = await getCurrentSession(request);
-  if (!session) {
-    const err = new Error("Não autenticado") as Error & { status?: number };
-    err.status = 401;
-    throw err;
-  }
-
-  if (shouldRequireCsrf(request)) {
-    const csrf = await validateCsrfRequest(request);
-    if (!csrf.ok) {
-      const err = new Error("CSRF inválido") as Error & { status?: number };
-      err.status = 403;
+  return runWithRlsContext({ tenantId: null, bypassRls: false }, async () => {
+    const session = await getSessionFromCookie(request, { updateActivity: true });
+    if (!session) {
+      const err = new Error("Não autenticado") as Error & { status?: number };
+      err.status = 401;
       throw err;
     }
-  }
 
-  await setDbAccessContext({
-    tenantId: session.session.currentTenantId,
-    bypassRls: false,
+    if (shouldRequireCsrf(request)) {
+      const csrf = await validateCsrfRequest(request);
+      if (!csrf.ok) {
+        const err = new Error("CSRF inválido") as Error & { status?: number };
+        err.status = 403;
+        throw err;
+      }
+    }
+
+    await applyRlsToCurrentTransaction({
+      tenantId: session.session.currentTenantId,
+      bypassRls: false,
+    });
+
+    return session;
   });
-
-  return session;
 }

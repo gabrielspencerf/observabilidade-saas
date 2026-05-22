@@ -15,6 +15,14 @@ function getEnvOptional(key: string): string | undefined {
   return process.env[key];
 }
 
+function parseWorkerDbAccessMode(
+  value: string | undefined
+): "off" | "bypass" | "tenant" {
+  const normalized = (value ?? "off").trim().toLowerCase();
+  if (normalized === "bypass" || normalized === "tenant") return normalized;
+  return "off";
+}
+
 export const env = {
   get databaseUrl(): string {
     return getEnv("DATABASE_URL");
@@ -44,9 +52,23 @@ export const env = {
     return this.nodeEnv === "development";
   },
 
+  get isProduction(): boolean {
+    return this.nodeEnv === "production";
+  },
+
   /** Habilita aplicação de contexto RLS por request (rollout gradual). */
   get securityEnforceRls(): boolean {
     return getEnvOptional("SECURITY_ENFORCE_RLS") === "true";
+  },
+
+  /**
+   * Modo de acesso do worker ao banco durante rollout de RLS.
+   * - off: sem contexto dedicado (comportamento legado)
+   * - bypass: força bypass de RLS para jobs do worker
+   * - tenant: aplica tenant quando o job possui tenantId (fallback para bypass em jobs globais)
+   */
+  get workerDbAccessMode(): "off" | "bypass" | "tenant" {
+    return parseWorkerDbAccessMode(getEnvOptional("WORKER_DB_ACCESS_MODE"));
   },
 
   /** Habilita validação CSRF por token em mutações autenticadas por cookie. */
@@ -86,5 +108,14 @@ export const env = {
   /** Clarity Data Export: permite cadastrar token e sincronizar insights no dashboard. */
   get clarityConnectEnabled(): boolean {
     return getEnvOptional("CLARITY_CONNECT_ENABLED") === "true";
+  },
+
+  /**
+   * App Secret da Meta (WhatsApp Cloud / Marketing API).
+   * Obrigatório em produção/staging para validar `X-Hub-Signature-256` nos POST
+   * `/api/webhooks/whatsapp-cloud/[numberId]`. Se vazio, o POST aceita sem HMAC (apenas dev local).
+   */
+  get metaAppSecret(): string | undefined {
+    return getEnvOptional("META_APP_SECRET");
   },
 } as const;

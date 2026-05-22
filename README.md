@@ -14,7 +14,7 @@ Este repositorio contem app web (Next.js), APIs internas, worker assicrono e cam
 - Next.js 15 + React 19 + TypeScript
 - Tailwind CSS
 - PostgreSQL + Drizzle ORM
-- Redis + BullMQ (filas e jobs)
+- Redis (filas e jobs assincronos com implementacao interna em `src/workers/queue`)
 - Autenticacao por sessao (cookie opaco)
 
 ## Funcionalidades principais
@@ -79,6 +79,18 @@ npm run dev
 
 App local: `http://localhost:3000`
 
+## Runtime da Vysen
+
+O copiloto da Vysen segue rodando com backend local da aplicação.
+Também existe uma camada de abstração preparada para integração futura com Agno em `src/server/vysen/runtime`.
+
+Variáveis planejadas:
+
+- `VYSEN_AGNO_ENABLED`
+- `VYSEN_AGNO_SERVICE_URL`
+- `VYSEN_AGNO_SESSION_TABLE`
+- `VYSEN_AGNO_MEMORY_TABLE`
+
 ### 6) (Opcional) Subir worker em paralelo
 
 ```bash
@@ -92,16 +104,21 @@ npm run worker:dev
 - `npm run start` - start de producao
 - `npm run lint` - lint do projeto
 - `npm run typecheck` - checagem TypeScript
+- `npm run smoke:web` - smoke estrutural de rotas e boundary web
+- `npm run smoke:api` - smoke estrutural de auth/tenant/webhooks
+- `npm run smoke:channels` - smoke local de Chatwoot/WhatsApp Cloud (raw event -> processor -> conversations/messages)
+- `npm run smoke:worker` - smoke estrutural de filas/readiness/runner
+- `npm run ci:verify` - pipeline minimo local (lint + typecheck + build + smokes)
 - `npm run db:migrate` - aplica migrations
 - `npm run db:seed` - popula dados iniciais
 - `npm run db:studio` - abre Drizzle Studio
 
-## Seguranca e boas praticas
+## Valor para o negocio
 
-- Nunca versione segredos reais em `.env` ou stacks Docker.
-- Use placeholders em documentacao e exemplos.
-- Mantenha validacoes e permissoes no servidor.
-- Toda rota mutavel deve passar por guard de autenticacao/autorizacao.
+- Centralize operacao, marketing e vendas em uma unica visao.
+- Transforme dados dispersos em prioridades claras para o time.
+- Ganhe velocidade na tomada de decisao com apoio do Vysen Copilot.
+- Melhore previsibilidade comercial com funil, sinais e indicadores em tempo real.
 
 ## Documentacao recomendada
 
@@ -109,6 +126,8 @@ npm run worker:dev
 - `docs/CONFIG_CREDENTIALS.md` - mapa de credenciais e variaveis
 - `docs/SECURITY_ENDPOINTS_MAP.md` - superficie de endpoints criticos
 - `docs/VYSEN_COPILOT.md` - modelos, fallback e limites do copilot
+- `docs/AGNO_VYSEN_ARQUITETURA_2026-04.md` - desenho de sessão, memória e workflow com Agno
+- `docs/PLANO_IMPLEMENTACAO_AGNO_VYSEN_2026-04.md` - rollout incremental dessa infraestrutura
 - `docs/REVISAO_COMPLETA_APP_2026-03.md` - auditoria tecnica consolidada
 
 ## Status

@@ -3,6 +3,10 @@ import { uazapiInstances } from "@/db/schema";
 import { decryptSecret } from "@/server/security/secret-crypto";
 import type { ProviderStatusDetails } from "@/server/integrations/providers/types";
 import { agentDebugLog } from "@/server/debug/agent-debug-log";
+import {
+  allowedHostsFromIntegrationBaseUrl,
+  safeFetch,
+} from "@/server/security/safe-fetch";
 
 export interface UazapiInstanceStatus {
   instanceId: string;
@@ -40,17 +44,18 @@ function resolveSecret(encrypted: string | null): string | null {
   }
 }
 
-async function requestWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, {
-      ...init,
-      signal: controller.signal,
-    });
-  } finally {
-    clearTimeout(timeout);
-  }
+async function requestWithTimeout(
+  url: string,
+  baseUrl: string,
+  init: RequestInit,
+  timeoutMs: number
+) {
+  return safeFetch(url, {
+    ...init,
+    allowedHosts: allowedHostsFromIntegrationBaseUrl(baseUrl),
+    timeoutMs,
+    maxRedirects: 2,
+  });
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -505,6 +510,7 @@ export async function fetchUazapiStatuses(): Promise<UazapiInstanceStatus[]> {
             endpointChecked = authAttempt.endpoint;
             const attempt = await requestWithTimeout(
               endpointChecked,
+              row.baseUrl,
               {
                 method: "GET",
                 headers: authAttempt.headers,

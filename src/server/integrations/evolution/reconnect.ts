@@ -1,17 +1,26 @@
 import QRCode from "qrcode";
+import {
+  allowedHostsFromIntegrationBaseUrl,
+  safeFetch,
+} from "@/server/security/safe-fetch";
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
-async function requestWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
-  }
+async function evolutionSafeRequest(
+  url: string,
+  baseUrl: string,
+  init: RequestInit,
+  timeoutMs: number
+) {
+  const allowedHosts = allowedHostsFromIntegrationBaseUrl(baseUrl);
+  return safeFetch(url, {
+    ...init,
+    allowedHosts,
+    timeoutMs,
+    maxRedirects: 2,
+  });
 }
 
 function evolutionHeaders(apiKey: string | null): HeadersInit | undefined {
@@ -94,8 +103,9 @@ export async function fetchEvolutionConnectionState(args: {
   for (const p of paths) {
     const url = `${base}${p}`;
     try {
-      const res = await requestWithTimeout(
+      const res = await evolutionSafeRequest(
         url,
+        args.baseUrl,
         { method: "GET", headers: evolutionHeaders(args.apiKey) },
         12000
       );
@@ -131,8 +141,9 @@ export async function fetchEvolutionConnect(args: {
   const name = encodeURIComponent(args.externalId);
   const url = `${base}/instance/connect/${name}`;
   try {
-    const res = await requestWithTimeout(
+    const res = await evolutionSafeRequest(
       url,
+      args.baseUrl,
       { method: "GET", headers: evolutionHeaders(args.apiKey) },
       15000
     );

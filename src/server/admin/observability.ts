@@ -23,12 +23,18 @@ import {
   QUEUE_RAW_TYPEBOT,
   QUEUE_RAW_UAZAPI,
   QUEUE_SYNC_GOOGLE_ADS,
+  QUEUE_SYNC_META_ADS,
+  QUEUE_SYNC_CLARITY,
   QUEUE_AI_CLASSIFICATION,
+  QUEUE_FOLLOWUP_DUE_TENANT,
   DLQ_RAW_EVOLUTION,
   DLQ_RAW_TYPEBOT,
   DLQ_RAW_UAZAPI,
   DLQ_SYNC_GOOGLE_ADS,
+  DLQ_SYNC_META_ADS,
+  DLQ_SYNC_CLARITY,
   DLQ_AI_CLASSIFICATION,
+  DLQ_FOLLOWUP_DUE_TENANT,
 } from "@/workers/queue";
 import { providerRegistry } from "@/server/integrations/providers/registry";
 import type { ProviderStatusDetails } from "@/server/integrations/providers/types";
@@ -80,12 +86,18 @@ export interface ObservabilitySnapshot {
     evolutionDepth: number;
     uazapiDepth: number;
     googleAdsDepth: number;
+    metaAdsDepth: number;
+    clarityDepth: number;
     aiClassificationDepth: number;
+    followupDueDepth: number;
     typebotDlqDepth: number;
     evolutionDlqDepth: number;
     uazapiDlqDepth: number;
     googleAdsDlqDepth: number;
+    metaAdsDlqDepth: number;
+    clarityDlqDepth: number;
     aiClassificationDlqDepth: number;
+    followupDueDlqDepth: number;
   };
   integrations: {
     evolution: Array<{
@@ -178,12 +190,18 @@ async function getQueueMetrics() {
         evolutionDepth: 0,
         uazapiDepth: 0,
         googleAdsDepth: 0,
+        metaAdsDepth: 0,
+        clarityDepth: 0,
         aiClassificationDepth: 0,
+        followupDueDepth: 0,
         typebotDlqDepth: 0,
         evolutionDlqDepth: 0,
         uazapiDlqDepth: 0,
         googleAdsDlqDepth: 0,
+        metaAdsDlqDepth: 0,
+        clarityDlqDepth: 0,
         aiClassificationDlqDepth: 0,
+        followupDueDlqDepth: 0,
       },
     };
   }
@@ -194,24 +212,36 @@ async function getQueueMetrics() {
       evolutionDepth,
       uazapiDepth,
       googleAdsDepth,
+      metaAdsDepth,
+      clarityDepth,
       aiClassificationDepth,
+      followupDueDepth,
       typebotDlqDepth,
       evolutionDlqDepth,
       uazapiDlqDepth,
       googleAdsDlqDepth,
+      metaAdsDlqDepth,
+      clarityDlqDepth,
       aiClassificationDlqDepth,
+      followupDueDlqDepth,
       workerHeartbeat,
     ] = await Promise.all([
       redis.llen(QUEUE_RAW_TYPEBOT),
       redis.llen(QUEUE_RAW_EVOLUTION),
       redis.llen(QUEUE_RAW_UAZAPI),
       redis.llen(QUEUE_SYNC_GOOGLE_ADS),
+      redis.llen(QUEUE_SYNC_META_ADS),
+      redis.llen(QUEUE_SYNC_CLARITY),
       redis.llen(QUEUE_AI_CLASSIFICATION),
+      redis.llen(QUEUE_FOLLOWUP_DUE_TENANT),
       redis.llen(DLQ_RAW_TYPEBOT),
       redis.llen(DLQ_RAW_EVOLUTION),
       redis.llen(DLQ_RAW_UAZAPI),
       redis.llen(DLQ_SYNC_GOOGLE_ADS),
+      redis.llen(DLQ_SYNC_META_ADS),
+      redis.llen(DLQ_SYNC_CLARITY),
       redis.llen(DLQ_AI_CLASSIFICATION),
+      redis.llen(DLQ_FOLLOWUP_DUE_TENANT),
       redis.get(HEARTBEAT_KEY),
     ]);
 
@@ -235,12 +265,18 @@ async function getQueueMetrics() {
         evolutionDepth,
         uazapiDepth,
         googleAdsDepth,
+        metaAdsDepth,
+        clarityDepth,
         aiClassificationDepth,
+        followupDueDepth,
         typebotDlqDepth,
         evolutionDlqDepth,
         uazapiDlqDepth,
         googleAdsDlqDepth,
+        metaAdsDlqDepth,
+        clarityDlqDepth,
         aiClassificationDlqDepth,
+        followupDueDlqDepth,
       },
     };
   } catch {
@@ -254,12 +290,18 @@ async function getQueueMetrics() {
         evolutionDepth: 0,
         uazapiDepth: 0,
         googleAdsDepth: 0,
+        metaAdsDepth: 0,
+        clarityDepth: 0,
         aiClassificationDepth: 0,
+        followupDueDepth: 0,
         typebotDlqDepth: 0,
         evolutionDlqDepth: 0,
         uazapiDlqDepth: 0,
         googleAdsDlqDepth: 0,
+        metaAdsDlqDepth: 0,
+        clarityDlqDepth: 0,
         aiClassificationDlqDepth: 0,
+        followupDueDlqDepth: 0,
       },
     };
   } finally {
@@ -564,13 +606,19 @@ export async function getObservabilitySnapshot(): Promise<ObservabilitySnapshot>
     queueData.queue.evolutionDepth +
     queueData.queue.uazapiDepth +
     queueData.queue.googleAdsDepth +
-    queueData.queue.aiClassificationDepth;
+    queueData.queue.metaAdsDepth +
+    queueData.queue.clarityDepth +
+    queueData.queue.aiClassificationDepth +
+    queueData.queue.followupDueDepth;
   const dlqDepthTotal =
     queueData.queue.typebotDlqDepth +
     queueData.queue.evolutionDlqDepth +
     queueData.queue.uazapiDlqDepth +
     queueData.queue.googleAdsDlqDepth +
-    queueData.queue.aiClassificationDlqDepth;
+    queueData.queue.metaAdsDlqDepth +
+    queueData.queue.clarityDlqDepth +
+    queueData.queue.aiClassificationDlqDepth +
+    queueData.queue.followupDueDlqDepth;
 
   const buckets = buildLastTimeBuckets(6, 10);
   const apiIngressByBucket = Array.from({ length: buckets.length }, () => 0);

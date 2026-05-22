@@ -174,30 +174,7 @@ export async function GET(
         }
       }
 
-      // Fallback: URL pública direta (sem headers), útil para alguns payloads.
-      if (mediaUrlFromPayload.startsWith("http://") || mediaUrlFromPayload.startsWith("https://")) {
-        try {
-          const response = await fetchWithTimeout(
-            mediaUrlFromPayload,
-            { method: "GET", redirect: "manual" },
-            8000
-          );
-          if (response.ok) {
-            const arrayBuffer = await response.arrayBuffer();
-            return new NextResponse(new Uint8Array(arrayBuffer), {
-              headers: {
-                "Content-Type":
-                  response.headers.get("content-type") ??
-                  (mediaType === "image" ? "image/jpeg" : "audio/ogg"),
-                "Content-Disposition": "inline",
-                "Cache-Control": "private, max-age=60",
-              },
-            });
-          }
-        } catch {
-          // segue para fallback Evolution
-        }
-      }
+      // Não buscar URLs públicas arbitrárias do payload para evitar SSRF.
     }
   }
 

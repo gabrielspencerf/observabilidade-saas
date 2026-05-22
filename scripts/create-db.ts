@@ -31,7 +31,15 @@ async function main() {
     console.log(`Banco "${dbName}" criado.`);
   } catch (err: unknown) {
     const msg = err instanceof Error ? err.message : (err && typeof err === "object" && "message" in err ? String((err as Error).message) : String(err));
-    if (msg.includes("already exists")) {
+    const code =
+      err && typeof err === "object" && "code" in err
+        ? String((err as { code?: string }).code ?? "")
+        : "";
+    if (
+      code === "42P04" ||
+      msg.includes("already exists") ||
+      msg.includes("já existe")
+    ) {
       console.log(`Banco "${dbName}" já existe.`);
     } else {
       console.error("Erro ao criar banco:", msg || err);

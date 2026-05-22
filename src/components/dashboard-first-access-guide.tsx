@@ -153,7 +153,7 @@ export function DashboardFirstAccessGuide({
       role="dialog"
       aria-modal="true"
       aria-labelledby="first-access-guide-title"
-      className="fixed inset-0 z-[65] flex items-center justify-center bg-brand-dark/78 p-4 backdrop-blur-sm"
+      className="vysen-layer-overlay fixed inset-0 flex items-center justify-center bg-brand-dark/78 p-4 backdrop-blur-sm"
     >
       <div className="w-full max-w-3xl overflow-hidden rounded-2xl border border-brand-border bg-brand-surface shadow-2xl">
         <div className="relative overflow-hidden border-b border-brand-border/70 bg-brand-surface/95 p-6">

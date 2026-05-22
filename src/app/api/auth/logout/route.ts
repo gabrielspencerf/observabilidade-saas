@@ -8,7 +8,7 @@ import {
   buildClearCookieHeader,
   buildClearCsrfCookie,
 } from "@/server/auth";
-import { resetDbAccessContext } from "@/server/db/access-context";
+import { runWithRlsContext } from "@/server/db/access-context";
 
 const APP_URL =
   typeof process.env.NEXT_PUBLIC_APP_URL === "string" &&
@@ -17,8 +17,9 @@ const APP_URL =
     : null;
 
 export async function POST(request: NextRequest) {
-  await resetDbAccessContext();
-  await invalidateCurrent(request);
+  await runWithRlsContext({ tenantId: null, bypassRls: true }, async () =>
+    invalidateCurrent(request)
+  );
   const baseUrl = APP_URL ?? request.nextUrl.origin;
   const loginUrl = new URL("/login", baseUrl);
   const response = NextResponse.redirect(loginUrl, 302);

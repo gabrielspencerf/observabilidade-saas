@@ -5,14 +5,18 @@
  */
 
 import { NextRequest, NextResponse } from "next/server";
-import { validateUazapiWebhook } from "@/server/integrations/uazapi/validate";
+import type { UazapiWebhookContext } from "@/server/integrations/uazapi";
 import { parseUazapiWebhookBody } from "@/server/integrations/uazapi/parse";
 import { ingestUazapiWebhook } from "@/server/integrations/uazapi/ingest";
 import { checkRateLimit } from "@/server/security/rate-limit";
-import { setDbAccessContext } from "@/server/db/access-context";
+import { withWebhookRlsTransaction } from "@/server/db/webhook-transaction";
+import { validateWebhookRequest } from "@/server/security/webhook-request";
 import { checkWebhookReplay } from "@/server/security/webhook-replay";
+import { apiError, apiOk, webhookResponseHeaders } from "@/server/http/api-contract";
+import { emitDomainEvent } from "@/server/observability/domain-events";
 
 const MAX_BODY_SIZE = 512 * 1024; // 512 KB
+const WEBHOOK_REPLAY_WINDOW_SECONDS = 10 * 60;
 
 export async function POST(
   request: NextRequest,
@@ -23,18 +27,14 @@ export async function POST(
     instanceId ?? request.nextUrl.searchParams.get("instance") ?? "";
 
   if (!instanceIdOrToken) {
-    return NextResponse.json(
-      { error: "Instance identifier required" },
-      { status: 400 }
-    );
+    return apiError("resource_required", "Instance identifier required", { status: 400 });
   }
 
   const contentType = request.headers.get("content-type") ?? "";
   if (!contentType.includes("application/json")) {
-    return NextResponse.json(
-      { error: "Content-Type must be application/json" },
-      { status: 415 }
-    );
+    return apiError("invalid_content_type", "Content-Type must be application/json", {
+      status: 415,
+    });
   }
 
   const rateLimit = await checkRateLimit({
@@ -45,13 +45,10 @@ export async function POST(
     resourceKey: instanceIdOrToken,
   });
   if (!rateLimit.allowed) {
-    return NextResponse.json(
-      { error: "Rate limit exceeded" },
-      {
-        status: 429,
-        headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
-      }
-    );
+    return apiError("rate_limited", "Rate limit exceeded", {
+      status: 429,
+      headers: { "Retry-After": String(rateLimit.retryAfterSeconds) },
+    });
   }
 
   let body: unknown;
@@ -59,69 +56,83 @@ export async function POST(
   try {
     rawBody = await request.text();
     if (rawBody.length > MAX_BODY_SIZE) {
-      return NextResponse.json(
-        { error: "Payload too large" },
-        { status: 413 }
-      );
+      return apiError("payload_too_large", "Payload too large", { status: 413 });
     }
     body = rawBody ? JSON.parse(rawBody) : {};
   } catch {
-    return NextResponse.json(
-      { error: "Invalid JSON body" },
-      { status: 400 }
-    );
+    return apiError("invalid_json", "Invalid JSON body", { status: 400 });
   }
 
-  const context = await validateUazapiWebhook(instanceIdOrToken);
-  if ("error" in context) {
-    return NextResponse.json(
-      { error: context.error },
-      { status: context.status }
+  return withWebhookRlsTransaction(async (lockToTenant) => {
+    const context = await validateWebhookRequest(
+      "uazapi",
+      request,
+      rawBody,
+      instanceIdOrToken
     );
-  }
+    if ("error" in context) {
+      return apiError("webhook_validation_failed", context.error, { status: context.status });
+    }
+    const uazapiContext = context as UazapiWebhookContext;
 
-  await setDbAccessContext({
-    tenantId: context.tenantId,
-    bypassRls: false,
+    await lockToTenant(uazapiContext.tenantId);
+
+    const parsed = parseUazapiWebhookBody(body);
+    if ("error" in parsed) {
+      return apiError("invalid_payload", parsed.error, { status: 400 });
+    }
+
+    const replay = await checkWebhookReplay({
+      provider: "uazapi",
+      resourceId: uazapiContext.uazapiInstanceId,
+      externalEventId: parsed.externalEventId,
+      timestampHeader: request.headers.get("x-webhook-timestamp"),
+      signatureHeader: request.headers.get("x-webhook-signature"),
+      rawBody,
+    });
+    if (!replay.ok) {
+      return apiError("replay_detected", "Webhook replay detectado", { status: 409 });
+    }
+
+    const result = await ingestUazapiWebhook({
+      tenantId: uazapiContext.tenantId,
+      uazapiInstanceId: uazapiContext.uazapiInstanceId,
+      eventType: parsed.eventType,
+      payload: parsed.payload,
+      externalEventId: parsed.externalEventId,
+    });
+
+    if ("error" in result) {
+      emitDomainEvent({
+        name: "webhook.uazapi.ingest_failed",
+        level: "error",
+        tenantId: uazapiContext.tenantId,
+        metadata: {
+          instanceId: uazapiContext.uazapiInstanceId,
+          reason: result.error,
+          eventType: parsed.eventType,
+        },
+      });
+      return apiError("ingest_failed", result.error, { status: 500 });
+    }
+
+    emitDomainEvent({
+      name: "webhook.uazapi.ingested",
+      tenantId: uazapiContext.tenantId,
+      metadata: {
+        instanceId: uazapiContext.uazapiInstanceId,
+        rawEventId: result.rawEventId,
+        eventType: parsed.eventType,
+      },
+    });
+    return apiOk(
+      { received: true, id: result.rawEventId },
+      {
+        headers: webhookResponseHeaders({
+          eventId: parsed.externalEventId ?? result.rawEventId,
+          replayWindowSeconds: WEBHOOK_REPLAY_WINDOW_SECONDS,
+        }),
+      }
+    );
   });
-
-  const parsed = parseUazapiWebhookBody(body);
-  if ("error" in parsed) {
-    return NextResponse.json(
-      { error: parsed.error },
-      { status: 400 }
-    );
-  }
-
-  const replay = await checkWebhookReplay({
-    provider: "uazapi",
-    resourceId: context.uazapiInstanceId,
-    externalEventId: parsed.externalEventId,
-    timestampHeader: request.headers.get("x-webhook-timestamp"),
-    signatureHeader: request.headers.get("x-webhook-signature"),
-    rawBody,
-  });
-  if (!replay.ok) {
-    return NextResponse.json({ error: "Webhook replay detectado" }, { status: 409 });
-  }
-
-  const result = await ingestUazapiWebhook({
-    tenantId: context.tenantId,
-    uazapiInstanceId: context.uazapiInstanceId,
-    eventType: parsed.eventType,
-    payload: parsed.payload,
-    externalEventId: parsed.externalEventId,
-  });
-
-  if ("error" in result) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: 500 }
-    );
-  }
-
-  return NextResponse.json(
-    { received: true, id: result.rawEventId },
-    { status: 200 }
-  );
 }

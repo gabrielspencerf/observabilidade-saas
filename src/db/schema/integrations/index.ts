@@ -5,3 +5,5 @@ export { clarityConnections } from "./clarity-connections";
 export { typebotBots } from "./typebot-bots";
 export { evolutionInstances } from "./evolution-instances";
 export { uazapiInstances } from "./uazapi-instances";
+export { chatwootAccounts } from "./chatwoot-accounts";
+export { whatsappCloudNumbers } from "./whatsapp-cloud-numbers";

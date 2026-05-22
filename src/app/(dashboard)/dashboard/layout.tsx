@@ -10,8 +10,7 @@ export default async function DashboardMainLayout({
 }: {
   children: React.ReactNode;
 }) {
-  const { session, tenantId, showAdminLink } =
-    await getDashboardTenantContext();
+  const { session, tenantId } = await getDashboardTenantContext();
   const insights = await getSidebarInsightsForTenant(tenantId, { periodDays: 30 });
   const db = getDb();
   const [profile] = await db
@@ -25,7 +24,6 @@ export default async function DashboardMainLayout({
       userEmail={session.user.email}
       userName={session.user.name}
       userAvatarUrl={profile?.avatarUrl ?? null}
-      showAdminLink={showAdminLink}
       insights={insights}
     >
       {children}

@@ -58,10 +58,28 @@ export interface JobProcessDueFollowupsTenant {
   attempt?: number;
 }
 
+export interface JobProcessChatwootRaw {
+  type: "process_chatwoot_raw";
+  rawEventId: string;
+  tenantId: string;
+  chatwootAccountId: string;
+  attempt?: number;
+}
+
+export interface JobProcessWhatsappCloudRaw {
+  type: "process_whatsapp_cloud_raw";
+  rawEventId: string;
+  tenantId: string;
+  whatsappCloudNumberId: string;
+  attempt?: number;
+}
+
 export type JobPayload =
   | JobProcessTypebotRaw
   | JobProcessEvolutionRaw
   | JobProcessUazapiRaw
+  | JobProcessChatwootRaw
+  | JobProcessWhatsappCloudRaw
   | JobSyncGoogleAdsAccount
   | JobSyncMetaAdsAccount
   | JobSyncClarityConnection
@@ -71,6 +89,8 @@ export type JobPayload =
 export const QUEUE_RAW_TYPEBOT = "queue:raw:typebot";
 export const QUEUE_RAW_EVOLUTION = "queue:raw:evolution";
 export const QUEUE_RAW_UAZAPI = "queue:raw:uazapi";
+export const QUEUE_RAW_CHATWOOT = "queue:raw:chatwoot";
+export const QUEUE_RAW_WHATSAPP_CLOUD = "queue:raw:whatsapp-cloud";
 export const QUEUE_SYNC_GOOGLE_ADS = "queue:sync:google-ads";
 export const QUEUE_SYNC_META_ADS = "queue:sync:meta-ads";
 export const QUEUE_SYNC_CLARITY = "queue:sync:clarity";
@@ -79,6 +99,8 @@ export const QUEUE_FOLLOWUP_DUE_TENANT = "queue:followup:due:tenant";
 export const DLQ_RAW_TYPEBOT = "queue:dlq:typebot";
 export const DLQ_RAW_EVOLUTION = "queue:dlq:evolution";
 export const DLQ_RAW_UAZAPI = "queue:dlq:uazapi";
+export const DLQ_RAW_CHATWOOT = "queue:dlq:chatwoot";
+export const DLQ_RAW_WHATSAPP_CLOUD = "queue:dlq:whatsapp-cloud";
 export const DLQ_SYNC_GOOGLE_ADS = "queue:dlq:google-ads";
 export const DLQ_SYNC_META_ADS = "queue:dlq:meta-ads";
 export const DLQ_SYNC_CLARITY = "queue:dlq:clarity";

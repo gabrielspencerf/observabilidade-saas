@@ -1,19 +1,28 @@
 import QRCode from "qrcode";
 import type { UazapiInstanceCredentials } from "./credentials";
 import { getUazapiInstanceCredentials } from "./credentials";
+import {
+  allowedHostsFromIntegrationBaseUrl,
+  safeFetch,
+} from "@/server/security/safe-fetch";
 
 function normalizeBaseUrl(baseUrl: string): string {
   return baseUrl.replace(/\/$/, "");
 }
 
-async function requestWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    return await fetch(url, { ...init, signal: controller.signal });
-  } finally {
-    clearTimeout(timeout);
-  }
+async function uazapiSafeRequest(
+  url: string,
+  baseUrl: string,
+  init: RequestInit,
+  timeoutMs: number
+) {
+  const allowedHosts = allowedHostsFromIntegrationBaseUrl(baseUrl);
+  return safeFetch(url, {
+    ...init,
+    allowedHosts,
+    timeoutMs,
+    maxRedirects: 2,
+  });
 }
 
 function buildHeaders(creds: UazapiInstanceCredentials): HeadersInit | undefined {
@@ -141,8 +150,9 @@ export async function fetchUazapiConnectionState(args: {
   let lastErr: string | undefined;
   for (const a of attempts) {
     try {
-      const res = await requestWithTimeout(
+      const res = await uazapiSafeRequest(
         a.url,
+        args.baseUrl,
         { method: "GET", headers: a.headers },
         12000
       );
@@ -189,8 +199,9 @@ export async function fetchUazapiConnect(args: {
   let lastErr: string | undefined;
   for (const a of attempts) {
     try {
-      const res = await requestWithTimeout(
+      const res = await uazapiSafeRequest(
         a.url,
+        args.baseUrl,
         { method: "GET", headers: a.headers },
         15000
       );

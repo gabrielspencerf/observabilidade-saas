@@ -4,6 +4,7 @@
  */
 
 import { eq } from "drizzle-orm";
+import { env } from "@/config/env";
 import { getDb } from "@/server/db";
 import { typebotBots } from "@/db/schema";
 import { verifyWebhookSecret } from "@/server/integrations/webhook-secret";
@@ -46,7 +47,7 @@ export async function validateTypebotWebhook(
   const credentials = await getTypebotBotCredentials(bot.id);
 
   const webhookSecret = credentials?.webhookSecret?.trim() || null;
-  let signatureValidated = false;
+
   if (webhookSecret) {
     const signatureCheck = verifyWebhookSignature({
       timestampHeader: request.headers.get("x-webhook-timestamp"),
@@ -54,15 +55,19 @@ export async function validateTypebotWebhook(
       rawBody,
       secret: webhookSecret,
     });
-    if (signatureCheck.ok) {
-      signatureValidated = true;
-    } else {
-      // Permite compatibilidade com o fluxo legado baseado em shared secret.
-      signatureValidated = false;
+    if (!signatureCheck.ok) {
+      return {
+        error: signatureCheck.error,
+        status: signatureCheck.status,
+      };
     }
+    return {
+      tenantId: bot.tenantId,
+      typebotBotId: bot.id,
+    };
   }
 
-  if (!signatureValidated && webhookSecretHash) {
+  if (webhookSecretHash) {
     const headerSecret = request.headers.get(WEBHOOK_SECRET_HEADER)?.trim();
     if (!headerSecret) {
       return {
@@ -73,6 +78,17 @@ export async function validateTypebotWebhook(
     if (!verifyWebhookSecret(headerSecret, webhookSecretHash)) {
       return { error: "Invalid webhook secret", status: 403 };
     }
+    return {
+      tenantId: bot.tenantId,
+      typebotBotId: bot.id,
+    };
+  }
+
+  if (env.isProduction) {
+    return {
+      error: "Bot sem segredo de webhook (assinatura ou hash) configurado",
+      status: 503,
+    };
   }
 
   return {

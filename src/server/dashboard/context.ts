@@ -16,7 +16,6 @@ export interface DashboardTenantContext {
   session: SessionWithUserAndTenant;
   currentMembership: MembershipItem;
   tenantId: string;
-  showAdminLink: boolean;
 }
 
 /**
@@ -43,12 +42,9 @@ export async function getDashboardTenantContext(): Promise<DashboardTenantContex
     redirect("/dashboard/context");
   }
 
-  const showAdminLink = currentMembership.roleSlug === "super_admin";
-
   return {
     session,
     currentMembership,
     tenantId: currentTenantId,
-    showAdminLink,
   };
 }

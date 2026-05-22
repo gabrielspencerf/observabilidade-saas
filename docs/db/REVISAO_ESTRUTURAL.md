@@ -25,6 +25,9 @@ Todos os arquivos referenciados em `src/db/migrations/meta/_journal.json` devem 
 | 14 | 0013_agent_notifications_followups |
 | 15 | 0014_vysen_knowledge_pgvector |
 | 16 | 0015_vysen_usage_events |
+| 17 | 0016_security_rls_tenant_policies |
+| 18 | 0017_tenant_role_permissions |
+| 19 | 0018_meta_ads_and_clarity |
 
 **Órfãs:** não deve haver arquivo `.sql` em `migrations/` que não esteja no journal (ou migrações manuais documentadas à parte).
 
@@ -46,7 +49,7 @@ npm run db:migrate
 
 ## 5. Worker, filas e Redis
 
-- Filas e consumidores: `src/workers/runner.ts` (BullMQ / Redis).
+- Filas e consumidores: `src/workers/runner.ts` (Redis com filas internas em `src/workers/queue`).
 - Readiness (heartbeat no Redis): com `REDIS_URL` definida, `npm run worker:readiness` — exit 0 indica worker vivo; exit 1 indica ausência de heartbeat ou problema de conexão.
 - Em produção: monitorar profundidade das filas via snapshot de observabilidade (admin) e alertas operacionais conforme [DEPLOY_VPS.md](../DEPLOY_VPS.md) se aplicável.
 

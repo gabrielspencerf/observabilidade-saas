@@ -9,7 +9,6 @@ interface DashboardMobileHeaderProps {
   userEmail: string;
   userName?: string | null;
   userAvatarUrl?: string | null;
-  showAdminLink?: boolean;
   insights: SidebarInsightsPayload;
 }
 
@@ -17,7 +16,6 @@ export function DashboardMobileHeader({
   userEmail,
   userName,
   userAvatarUrl,
-  showAdminLink = false,
   insights,
 }: DashboardMobileHeaderProps) {
   return (
@@ -29,7 +27,6 @@ export function DashboardMobileHeader({
         userEmail={userEmail}
         userName={userName}
         userAvatarUrl={userAvatarUrl}
-        showAdminLink={showAdminLink}
         insights={insights}
         hideNotificationBell
       />

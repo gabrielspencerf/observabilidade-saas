@@ -35,6 +35,11 @@ const config: Config = {
         display: ['"Bricolage Grotesque"', "Inter", "system-ui", "sans-serif"],
         mono: ['"JetBrains Mono"', "monospace"],
       },
+      fontSize: {
+        xs: ["0.8rem", { lineHeight: "1.2rem" }],
+        sm: ["0.93rem", { lineHeight: "1.4rem" }],
+        base: ["1rem", { lineHeight: "1.6rem" }],
+      },
       borderRadius: {
         sm: "4px",
         md: "8px",

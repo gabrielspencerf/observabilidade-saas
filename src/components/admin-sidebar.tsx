@@ -1,7 +1,7 @@
 "use client";
 
 /**
- * Sidebar do admin.
+ * Sidebar compartilhada entre superadmin tecnico e admin da empresa.
  */
 
 import Link from "next/link";
@@ -10,22 +10,39 @@ import { useEffect, useRef, useState } from "react";
 import { ChevronUp, LogOut, UserCircle2 } from "lucide-react";
 import { SidebarNavSections } from "@/components/sidebar-nav-sections";
 import { SidebarInsightsCarousel } from "@/components/sidebar-insights-carousel";
-import { adminNavSections } from "@/components/sidebar-navigation";
+import {
+  companyAdminNavSections,
+  superadminNavSections,
+} from "@/components/sidebar-navigation";
 import type { SidebarInsightsPayload } from "@/types/sidebar-insights";
 
 interface AdminSidebarProps {
   userEmail: string;
   userName?: string | null;
   insights: SidebarInsightsPayload;
+  variant?: "admin" | "superadmin";
 }
 
-export function AdminSidebar({ userEmail, userName, insights }: AdminSidebarProps) {
+export function AdminSidebar({
+  userEmail,
+  userName,
+  insights,
+  variant = "superadmin",
+}: AdminSidebarProps) {
   const pathname = usePathname();
   const [profileMenuOpen, setProfileMenuOpen] = useState(false);
   const profileMenuRef = useRef<HTMLDivElement | null>(null);
-  const displayName = userName?.trim() || userEmail.split("@")[0] || "Usuário";
+  const displayName = userName?.trim() || userEmail.split("@")[0] || "Usuario";
   const avatarLetter = displayName.charAt(0).toUpperCase();
   const firstName = displayName.split(" ")[0] || displayName;
+  const navSections = variant === "admin" ? companyAdminNavSections : superadminNavSections;
+  const areaLabel = variant === "admin" ? "ADMIN" : "SUPERADMIN";
+  const areaSubtitle =
+    variant === "admin" ? "Operacao da empresa" : "Infraestrutura e plataforma";
+  const ariaLabel =
+    variant === "admin"
+      ? "Abrir menu de perfil da empresa"
+      : "Abrir menu de perfil do superadmin";
 
   useEffect(() => {
     if (!profileMenuOpen) return;
@@ -42,28 +59,24 @@ export function AdminSidebar({ userEmail, userName, insights }: AdminSidebarProp
   return (
     <aside className="sidebar flex h-full flex-col scroll-hide overflow-y-auto overflow-x-hidden border-r border-brand-border">
       <div className="flex flex-1 flex-col">
-        {/* Topo: branding e boas-vindas */}
         <div className="border-b border-brand-border p-4">
           <div className="mb-3 h-px w-full bg-gradient-to-r from-brand-neon/0 via-brand-neon/45 to-brand-neon/0" />
           <div className="flex flex-col gap-1 px-2">
             <div className="text-xs font-medium uppercase tracking-wider text-brand-muted">
-              SUPERADMIN
+              {areaLabel}
             </div>
             <h2 className="truncate text-lg font-semibold text-brand-text">Vysen</h2>
-            <p className="text-xs text-brand-muted">Bem-vindo, {firstName}</p>
+            <p className="text-xs text-brand-muted">{areaSubtitle}</p>
+            <p className="text-[11px] text-brand-muted/80">Bem-vindo, {firstName}</p>
           </div>
         </div>
 
-        <SidebarNavSections
-          pathname={pathname}
-          sections={adminNavSections}
-        />
+        <SidebarNavSections pathname={pathname} sections={navSections} />
 
         <div className="sidebar-fade-cap shrink-0 p-4">
           <SidebarInsightsCarousel insights={insights} />
         </div>
 
-        {/* Rodapé: usuário + ações */}
         <div className="sidebar-fade-cap mt-auto shrink-0 p-4">
           <div ref={profileMenuRef} className="relative">
             <button
@@ -72,7 +85,7 @@ export function AdminSidebar({ userEmail, userName, insights }: AdminSidebarProp
               className="flex w-full items-center gap-3 rounded-xl border border-brand-border bg-brand-surface/50 px-3 py-2 text-left transition-colors hover:bg-brand-surface"
               aria-expanded={profileMenuOpen}
               aria-haspopup="menu"
-              aria-label="Abrir menu de perfil do superadmin"
+              aria-label={ariaLabel}
             >
               <div className="flex h-9 w-9 shrink-0 items-center justify-center rounded-full border border-brand-border bg-brand-surface text-sm font-semibold text-brand-text shadow-sm">
                 {avatarLetter}
@@ -105,13 +118,13 @@ export function AdminSidebar({ userEmail, userName, insights }: AdminSidebarProp
                 </div>
                 <div className="p-2">
                   <Link
-                    href="/dashboard/settings"
+                    href={variant === "admin" ? "/admin" : "/superadmin"}
                     role="menuitem"
                     onClick={() => setProfileMenuOpen(false)}
                     className="fx-button mb-1.5 inline-flex w-full items-center gap-2 rounded-lg px-3 py-2 text-xs font-medium text-brand-text transition-colors hover:bg-brand-surface/80"
                   >
                     <UserCircle2 className="h-4 w-4 text-brand-muted" aria-hidden />
-                    <span>Meu perfil</span>
+                    <span>{variant === "admin" ? "Painel da empresa" : "Console tecnico"}</span>
                   </Link>
                   <form action="/api/auth/logout" method="POST">
                     <button

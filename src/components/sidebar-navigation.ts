@@ -3,6 +3,7 @@ import {
   Activity,
   BarChart3,
   Box,
+  BriefcaseBusiness,
   Building2,
   Eye,
   Filter,
@@ -16,14 +17,15 @@ import {
   TrendingUp,
   UserCircle,
   Users,
+  UsersRound,
   Waypoints,
 } from "lucide-react";
 import type { ProviderBrand } from "@/components/provider-brand-icon";
 
 /**
- * Governança da navegação:
- * - Seções com `label` agrupam itens (ex.: Comercial, Canais) sem poluir a lista principal.
- * - A navegação de Admin é separada e nunca deve aparecer no menu do dashboard.
+ * Governanca da navegacao:
+ * - Secoes com `label` agrupam itens sem poluir a lista principal.
+ * - Dashboard, admin da empresa e superadmin tecnico possuem mapas distintos.
  */
 export interface SidebarNavItem {
   href: string;
@@ -45,7 +47,7 @@ export const dashboardNavSections: SidebarNavSection[] = [
   {
     id: "dashboard-main",
     label: "",
-    items: [{ href: "/dashboard/home", label: "Início", icon: LayoutDashboard }],
+    items: [{ href: "/dashboard/home", label: "Inicio", icon: LayoutDashboard }],
   },
   {
     id: "comercial",
@@ -64,10 +66,20 @@ export const dashboardNavSections: SidebarNavSection[] = [
     icon: Megaphone,
     collapsible: true,
     items: [
-      { href: "/dashboard/google-ads", label: "Google Ads", icon: BarChart3, providerBrand: "googleAds" },
+      {
+        href: "/dashboard/google-ads",
+        label: "Google Ads",
+        icon: BarChart3,
+        providerBrand: "googleAds",
+      },
       { href: "/dashboard/meta-ads", label: "Meta Ads", icon: Megaphone, providerBrand: "metaAds" },
       { href: "/dashboard/clarity", label: "Clarity", icon: Eye, providerBrand: "clarity" },
-      { href: "/dashboard/settings/whatsapp", label: "WhatsApp", icon: Smartphone, providerBrand: "whatsapp" },
+      {
+        href: "/dashboard/settings/whatsapp",
+        label: "WhatsApp",
+        icon: Smartphone,
+        providerBrand: "whatsapp",
+      },
     ],
   },
   {
@@ -77,36 +89,50 @@ export const dashboardNavSections: SidebarNavSection[] = [
       { href: "/dashboard/contacts", label: "Contatos", icon: UserCircle },
       { href: "/dashboard/funnel", label: "Funil", icon: Filter },
       { href: "/dashboard/products", label: "Produtos", icon: Package },
-      { href: "/dashboard/settings", label: "Configurações", icon: Settings },
+      { href: "/dashboard/settings", label: "Configuracoes", icon: Settings },
     ],
   },
 ];
 
-export const adminNavSections: SidebarNavSection[] = [
+export const companyAdminNavSections: SidebarNavSection[] = [
   {
-    id: "admin-overview",
+    id: "company-overview",
     label: "Painel",
-    items: [{ href: "/admin", label: "Início", icon: LayoutDashboard, exactMatch: true }],
-  },
-  {
-    id: "admin-management",
-    label: "Gestão",
     items: [
-      { href: "/admin/tenants", label: "Tenants", icon: Building2 },
-      { href: "/admin/users", label: "Usuários", icon: Users },
+      { href: "/admin", label: "Inicio", icon: LayoutDashboard, exactMatch: true },
+      { href: "/admin/clients", label: "Clientes", icon: BriefcaseBusiness },
     ],
   },
   {
-    id: "admin-platform",
+    id: "company-operation",
+    label: "Operacao",
+    items: [{ href: "/admin/clients", label: "Carteira resumida", icon: UsersRound }],
+  },
+];
+
+export const superadminNavSections: SidebarNavSection[] = [
+  {
+    id: "superadmin-overview",
+    label: "Painel tecnico",
+    items: [
+      { href: "/superadmin", label: "Inicio", icon: LayoutDashboard, exactMatch: true },
+      { href: "/superadmin/tenants", label: "Tenants", icon: Building2 },
+      { href: "/superadmin/users", label: "Usuarios", icon: Users },
+    ],
+  },
+  {
+    id: "superadmin-platform",
     label: "Plataforma",
     items: [
-      { href: "/admin/integrations", label: "Integrações", icon: Box },
-      { href: "/admin/agent", label: "Vysen", icon: Sparkles },
-      { href: "/admin/worker-pipeline", label: "Worker & dados", icon: Waypoints },
-      { href: "/admin/observability", label: "Observabilidade", icon: Activity },
+      { href: "/superadmin/integrations", label: "Integracoes", icon: Box },
+      { href: "/superadmin/agent", label: "Vysen", icon: Sparkles },
+      { href: "/superadmin/worker-pipeline", label: "Worker & dados", icon: Waypoints },
+      { href: "/superadmin/observability", label: "Observabilidade", icon: Activity },
     ],
   },
 ];
+
+export const adminNavSections = superadminNavSections;
 
 export function isNavItemActive(pathname: string, item: SidebarNavItem): boolean {
   if (item.exactMatch) return pathname === item.href;

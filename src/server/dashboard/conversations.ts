@@ -1,6 +1,6 @@
 /**
  * Listagem de conversas por tenant. Uso em páginas do dashboard; tenant sempre da sessão.
- * Inclui conversas de Evolution e UAZAPI (paridade entre integrações).
+ * Inclui conversas de Evolution, UAZAPI, Chatwoot e WhatsApp Cloud.
  */
 
 import { desc, eq, sql } from "drizzle-orm";
@@ -10,6 +10,8 @@ import {
   conversationMessages,
   evolutionInstances,
   uazapiInstances,
+  chatwootAccounts,
+  whatsappCloudNumbers,
   leads,
 } from "@/db/schema";
 
@@ -30,7 +32,7 @@ export interface ListConversationsOptions {
 }
 
 /**
- * Lista conversas do tenant (Evolution + UAZAPI) com nome da instância e contagem de mensagens.
+ * Lista conversas do tenant com nome/label do recurso de canal e contagem de mensagens.
  * Ordenado por last_synced_at desc (nulls last), depois started_at desc.
  */
 export async function listConversationsForTenant(
@@ -51,6 +53,11 @@ export async function listConversationsForTenant(
       evolutionInstanceExternalId: evolutionInstances.externalId,
       uazapiInstanceName: uazapiInstances.instanceName,
       uazapiInstanceExternalId: uazapiInstances.externalId,
+      chatwootAccountLabel: chatwootAccounts.label,
+      chatwootAccountExternalId: chatwootAccounts.externalId,
+      wcNumberLabel: whatsappCloudNumbers.label,
+      wcDisplayPhone: whatsappCloudNumbers.displayPhone,
+      wcPhoneNumberId: whatsappCloudNumbers.phoneNumberId,
       leadName: leads.name,
       leadPhone: leads.phone,
     })
@@ -62,6 +69,14 @@ export async function listConversationsForTenant(
     .leftJoin(
       uazapiInstances,
       eq(conversations.uazapiInstanceId, uazapiInstances.id)
+    )
+    .leftJoin(
+      chatwootAccounts,
+      eq(conversations.chatwootAccountId, chatwootAccounts.id)
+    )
+    .leftJoin(
+      whatsappCloudNumbers,
+      eq(conversations.whatsappCloudNumberId, whatsappCloudNumbers.id)
     )
     .leftJoin(leads, eq(conversations.leadId, leads.id))
     .where(eq(conversations.tenantId, tenantId))
@@ -96,8 +111,19 @@ export async function listConversationsForTenant(
       (r.uazapiInstanceName && r.uazapiInstanceName.trim()) ||
       r.uazapiInstanceExternalId ||
       "";
+    const chatwootTail =
+      (r.chatwootAccountLabel && r.chatwootAccountLabel.trim()) ||
+      r.chatwootAccountExternalId ||
+      "";
+    const chatwootDisplay = chatwootTail ? `Chatwoot · ${chatwootTail}` : "";
+    const wcTail =
+      (r.wcNumberLabel && r.wcNumberLabel.trim()) ||
+      r.wcDisplayPhone ||
+      r.wcPhoneNumberId ||
+      "";
+    const wcDisplay = wcTail ? `WhatsApp · ${wcTail}` : "";
     const instanceDisplay =
-      evolutionDisplay || uazapiDisplay || r.id;
+      evolutionDisplay || uazapiDisplay || chatwootDisplay || wcDisplay || r.id;
     return {
       id: r.id,
       externalId: r.externalId,

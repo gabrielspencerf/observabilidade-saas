@@ -3,6 +3,10 @@ import { getDb } from "@/server/db";
 import { evolutionInstances } from "@/db/schema";
 import { getEvolutionInstanceSecret } from "./credentials";
 import type { ProviderStatusDetails } from "@/server/integrations/providers/types";
+import {
+  allowedHostsFromIntegrationBaseUrl,
+  safeFetch,
+} from "@/server/security/safe-fetch";
 
 export interface ProviderInstanceStatus {
   instanceId: string;
@@ -14,18 +18,18 @@ export interface ProviderInstanceStatus {
   details?: ProviderStatusDetails;
 }
 
-async function requestWithTimeout(url: string, init: RequestInit, timeoutMs: number) {
-  const controller = new AbortController();
-  const timeout = setTimeout(() => controller.abort(), timeoutMs);
-  try {
-    const response = await fetch(url, {
-      ...init,
-      signal: controller.signal,
-    });
-    return response;
-  } finally {
-    clearTimeout(timeout);
-  }
+async function requestWithTimeout(
+  url: string,
+  baseUrl: string,
+  init: RequestInit,
+  timeoutMs: number
+) {
+  return safeFetch(url, {
+    ...init,
+    allowedHosts: allowedHostsFromIntegrationBaseUrl(baseUrl),
+    timeoutMs,
+    maxRedirects: 2,
+  });
 }
 
 function normalizeBaseUrl(baseUrl: string): string {
@@ -113,6 +117,7 @@ export async function fetchEvolutionStatuses(): Promise<ProviderInstanceStatus[]
         const secret = await getEvolutionInstanceSecret(row.id);
         let response = await requestWithTimeout(
           primaryEndpoint,
+          row.baseUrl,
           {
             method: "GET",
             headers: secret ? { apikey: secret } : undefined,
@@ -123,6 +128,7 @@ export async function fetchEvolutionStatuses(): Promise<ProviderInstanceStatus[]
           endpointChecked = fallbackEndpoint;
           response = await requestWithTimeout(
             fallbackEndpoint,
+            row.baseUrl,
             {
               method: "GET",
               headers: secret ? { apikey: secret } : undefined,

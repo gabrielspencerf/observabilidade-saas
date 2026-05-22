@@ -8,7 +8,7 @@ O PostgreSQL 16 foi instalado via **winget** (`PostgreSQL.PostgreSQL.16`). Segue
 
 O instalador pode ter aberto um **assistente gráfico**. Conclua as telas:
 
-- **Senha do usuário `postgres`:** Use `postgres` se quiser manter o `.env` como está (`DATABASE_URL=postgresql://postgres:postgres@localhost:5432/vysen`). Se escolher outra senha, altere no `.env` a parte `postgres:SUA_SENHA` na `DATABASE_URL`.
+- **Senha do usuário `postgres`:** Use `postgres` se quiser manter o `.env` como está (`DATABASE_URL=postgresql://postgres:postgres@localhost:5432/app`). Se escolher outra senha, altere no `.env` a parte `postgres:SUA_SENHA` na `DATABASE_URL`.
 - **Porta:** Deixe **5432** (padrão).
 - Finalize o assistente.
 
@@ -76,7 +76,7 @@ npm run dev
 
 - Confirme que o serviço PostgreSQL está **Em execução** em `services.msc`.
 - Confirme que a **senha** em `DATABASE_URL` no `.env` é a mesma definida no instalador para o usuário `postgres`.
-- Se tiver mudado a porta no instalador, ajuste em `.env`: `postgresql://postgres:postgres@localhost:SUA_PORTA/vysen`.
+- Se tiver mudado a porta no instalador, ajuste em `.env`: `postgresql://postgres:postgres@localhost:SUA_PORTA/app`.
 
 ---
 
