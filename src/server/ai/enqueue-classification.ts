@@ -2,6 +2,21 @@ import { enqueueWithDedup } from "@/workers/queue";
 import { getSharedRedis } from "@/server/redis";
 
 /**
+ * Chave Redis usada pelo dedup. Exportada para uso em testes/smoke que queiram
+ * limpar o lock entre cenários consecutivos sem esperar o TTL de 30s.
+ *
+ * Formato real no Redis: `dedup:enqueue:${classifyDedupKey(...)}`. O prefixo
+ * `dedup:enqueue:` é adicionado por `enqueueWithDedup`.
+ */
+export function classifyDedupKey(tenantId: string, conversationId: string): string {
+  return `classify:${tenantId}:${conversationId}`;
+}
+
+export function classifyDedupRedisKey(tenantId: string, conversationId: string): string {
+  return `dedup:enqueue:${classifyDedupKey(tenantId, conversationId)}`;
+}
+
+/**
  * Enfileira classificação de uma conversa, deduplicando por `conversationId` em
  * janela de 30s.
  *
@@ -26,7 +41,7 @@ export async function enqueueConversationClassification(input: {
         conversationId: input.conversationId,
       },
       {
-        dedupKey: `classify:${input.tenantId}:${input.conversationId}`,
+        dedupKey: classifyDedupKey(input.tenantId, input.conversationId),
         dedupTtlSec: 30,
       }
     );

@@ -5,7 +5,9 @@
 
 services:
   postgres:
-    image: postgres:16-alpine
+    # pgvector/pgvector:pg16 inclui extensão pgvector (necessária para Vysen knowledge base).
+    # Mesma imagem usada no Swarm — evita drift entre compose dev e prod.
+    image: pgvector/pgvector:pg16
     container_name: app-postgres
     environment:
       POSTGRES_USER: postgres

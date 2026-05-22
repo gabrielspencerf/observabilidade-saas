@@ -43,7 +43,16 @@ COPY --from=builder /app/.next/standalone ./
 COPY --from=builder /app/.next/static ./.next/static
 COPY --from=builder /app/public ./public
 
-# Worker: precisa de src + node_modules (tsx + deps de fila/DB)
+# Worker: precisa de src + node_modules (tsx + deps de fila/DB).
+# Por que executar via tsx em runtime em vez de JS pré-compilado:
+# - tsx está em `dependencies` (não devDependencies) — está na imagem final.
+# - Imagem `deps` é npm ci --omit=dev, ou seja: SEM devDeps.
+# - Paths aliases (@/...) não resolvem com tsc puro; compilar exigiria tsup ou
+#   tsc-alias e revisão do tsconfig. Investimento maior que o ganho.
+# - Custo real: ~200ms a mais de boot do worker e parse TS no startup; estado
+#   estável é Node JIT comum.
+# Se um dia o boot do worker precisar ficar abaixo de 1s, considere migrar pra
+# tsup/esbuild e mudar o command no stack para `node dist/worker.js`.
 COPY --from=deps /app/node_modules ./node_modules
 COPY package.json ./
 COPY src ./src

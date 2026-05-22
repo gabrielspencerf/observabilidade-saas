@@ -48,14 +48,61 @@ export function shouldRequireCsrf(request: Request | null): boolean {
   return method === "POST" || method === "PUT" || method === "PATCH" || method === "DELETE";
 }
 
+function expectedOriginFromRequest(request: Request): string | null {
+  // Reverse-proxy (Traefik) reescreve host/proto via X-Forwarded-*; em dev local
+  // usa o próprio host da request.
+  const host =
+    request.headers.get("x-forwarded-host") ?? request.headers.get("host");
+  if (!host) return null;
+  const proto =
+    request.headers.get("x-forwarded-proto") ??
+    (() => {
+      try {
+        return new URL(request.url).protocol.replace(":", "");
+      } catch {
+        return "https";
+      }
+    })();
+  return `${proto}://${host}`;
+}
+
+/**
+ * Verifica se Origin (ou Referer, como fallback) bate com o host atual.
+ *
+ * Defesa em profundidade contra XSS que rouba o CSRF cookie e replica em sub-
+ * domínio atacante: o token bate mas o Origin do site malicioso não. Se Origin
+ * e Referer estiverem ambos ausentes (ex.: alguns clientes server-to-server),
+ * aceitamos — o token check ainda protege.
+ */
+function isOriginAllowed(request: Request): boolean {
+  const origin = request.headers.get("origin")?.trim();
+  const referer = request.headers.get("referer")?.trim();
+  if (!origin && !referer) return true;
+  const expected = expectedOriginFromRequest(request);
+  if (!expected) return false;
+  if (origin) return origin === expected;
+  if (referer) {
+    try {
+      return new URL(referer).origin === expected;
+    } catch {
+      return false;
+    }
+  }
+  return false;
+}
+
 /**
  * Valida CSRF: header `x-csrf-token` igual ao cookie, ou (mutações com body de formulário)
  * campo `csrf_token` no FormData igual ao cookie. Usa clone do body para não consumir o stream original.
+ *
+ * Adicionalmente, valida que `Origin`/`Referer` (quando presentes) batem com o
+ * host do request — fecha XSS que rouba o cookie e replica em outro domínio.
  */
 export async function validateCsrfRequest(
   request: Request | null
 ): Promise<{ ok: true } | { ok: false }> {
   if (!request) return { ok: false };
+  if (!isOriginAllowed(request)) return { ok: false };
   const cookieToken = getCookieFromHeader(request.headers.get("cookie"), CSRF_COOKIE_NAME);
   if (!cookieToken) return { ok: false };
 

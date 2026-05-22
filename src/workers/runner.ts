@@ -15,7 +15,12 @@
  */
 import "dotenv/config";
 import Redis from "ioredis";
-import { HEARTBEAT_KEY, MAX_AGE_MS } from "./readiness";
+import {
+  HEARTBEAT_KEY,
+  MAX_AGE_MS,
+  workerInstanceHeartbeatKey,
+  workerInstanceId,
+} from "./readiness";
 import { env } from "@/config/env";
 import {
   enqueue,
@@ -603,12 +608,21 @@ async function tickReaper(): Promise<void> {
 
 // === Periodic ticks ===
 
+const WORKER_INSTANCE_ID = workerInstanceId();
+const WORKER_INSTANCE_KEY = workerInstanceHeartbeatKey(WORKER_INSTANCE_ID);
+
 function writeHeartbeat(): void {
-  heartbeatRedis
-    .set(HEARTBEAT_KEY, Date.now().toString(), "PX", MAX_AGE_MS)
-    .catch((err) => {
-      console.error("Heartbeat write failed:", err);
-    });
+  const now = Date.now().toString();
+  // Chave agregada (HEARTBEAT_KEY): mantida para compatibilidade — qualquer
+  // worker que escreve "ganha". Útil pra healthcheck "tem ALGUM worker vivo?".
+  heartbeatRedis.set(HEARTBEAT_KEY, now, "PX", MAX_AGE_MS).catch((err) => {
+    console.error("Heartbeat write failed:", err);
+  });
+  // Chave por instância (worker:heartbeat:<id>): permite detectar split-brain,
+  // worker individual com problema, e dashboards de "quantas réplicas vivas".
+  heartbeatRedis.set(WORKER_INSTANCE_KEY, now, "PX", MAX_AGE_MS).catch((err) => {
+    console.error("Heartbeat per-instance write failed:", err);
+  });
 }
 
 const heartbeatInterval = setInterval(writeHeartbeat, 10_000);
@@ -656,7 +670,7 @@ const reaperInterval = setInterval(() => {
 
 redis.on("connect", () => {
   console.log(
-    "Worker: Redis conectado; heartbeat, schedulers e filas typebot/evolution/uazapi/chatwoot/whatsapp-cloud/google-ads/meta-ads/clarity/ai/followup ativos."
+    `Worker [${WORKER_INSTANCE_ID}]: Redis conectado; heartbeat, schedulers e filas typebot/evolution/uazapi/chatwoot/whatsapp-cloud/google-ads/meta-ads/clarity/ai/followup ativos.`
   );
   logRlsRolloutStatus();
   startLoop("typebot", runTypebotConsumer);

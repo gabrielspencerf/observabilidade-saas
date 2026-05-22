@@ -2,9 +2,24 @@
  * Readiness/heartbeat do worker: verifica se a chave de heartbeat no Redis existe e é recente.
  * Uso: script ou healthcheck externo; não é endpoint HTTP (worker não serve HTTP).
  */
+import { hostname } from "node:os";
 
 const HEARTBEAT_KEY = "worker:heartbeat";
+const HEARTBEAT_PREFIX = "worker:heartbeat:";
 const MAX_AGE_MS = 30_000; // 30s sem heartbeat = não pronto
+
+/**
+ * Identificador estável do worker: hostname do pod/container. Em Kubernetes e
+ * Swarm, o hostname é o pod/container id, então temos uma chave única por
+ * réplica. Em dev local, é o hostname da máquina (também único).
+ */
+export function workerInstanceId(): string {
+  return process.env.WORKER_INSTANCE_ID?.trim() || hostname() || "unknown";
+}
+
+export function workerInstanceHeartbeatKey(id: string = workerInstanceId()): string {
+  return `${HEARTBEAT_PREFIX}${id}`;
+}
 
 export interface ReadinessResult {
   ready: boolean;
