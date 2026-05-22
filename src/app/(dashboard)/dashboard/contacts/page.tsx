@@ -1,9 +1,10 @@
+import Link from "next/link";
 import { getDashboardTenantContext, listContactsForTenant } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
 import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
-import { Input, Button } from "@/components/ui";
+import { Input, Button, LinkButton } from "@/components/ui";
 import { ImportExportActions } from "@/components/dashboard/import-export-actions";
 import { UserCircle } from "lucide-react";
 import { formatDateTime as formatDate } from "@/lib/i18n/date";
@@ -32,6 +33,12 @@ export default async function DashboardContactsPage({
         badges={[`${contactsList.length} itens`]}
         actions={
           <>
+            <LinkButton
+              href="/dashboard/contacts/new"
+              size="sm"
+            >
+              Novo contato
+            </LinkButton>
             <ImportExportActions
               exportUrl="/api/dashboard/contacts/export"
               importUrl="/api/dashboard/contacts/import"
@@ -85,26 +92,31 @@ export default async function DashboardContactsPage({
           </div>
 
           {contactsList.map((contact) => (
-            <ListRowCard
+            <Link
               key={contact.id}
-              className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-center"
+              href={`/dashboard/contacts/${contact.id}/edit`}
+              className="block transition-colors"
             >
-              <div className="font-medium text-brand-text">
-                {contact.name ?? contact.email ?? contact.phone ?? contact.id}
-              </div>
-              <div className="text-sm text-brand-muted truncate" title={contact.email ?? ""}>
-                {contact.email ?? "—"}
-              </div>
-              <div className="text-sm text-brand-muted">{contact.phone ?? "—"}</div>
-              <div>
-                <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-text/5 px-2 py-0.5 text-xs font-medium text-brand-text border border-brand-text/10">
-                  {contact.source}
-                </span>
-              </div>
-              <div className="text-xs text-brand-muted">
-                {formatDate(contact.updatedAt)}
-              </div>
-            </ListRowCard>
+              <ListRowCard
+                className="grid grid-cols-1 lg:grid-cols-5 gap-4 items-center cursor-pointer hover:border-brand-neon/30"
+              >
+                <div className="font-medium text-brand-text">
+                  {contact.name ?? contact.email ?? contact.phone ?? contact.id}
+                </div>
+                <div className="text-sm text-brand-muted truncate" title={contact.email ?? ""}>
+                  {contact.email ?? "—"}
+                </div>
+                <div className="text-sm text-brand-muted">{contact.phone ?? "—"}</div>
+                <div>
+                  <span className="inline-flex items-center gap-1.5 rounded-full bg-brand-text/5 px-2 py-0.5 text-xs font-medium text-brand-text border border-brand-text/10">
+                    {contact.source}
+                  </span>
+                </div>
+                <div className="text-xs text-brand-muted">
+                  {formatDate(contact.updatedAt)}
+                </div>
+              </ListRowCard>
+            </Link>
           ))}
         </div>
       )}

@@ -42,6 +42,12 @@ export default async function DashboardLeadsPage({
         actions={
           <>
             <LinkButton
+              href="/dashboard/leads/new"
+              size="sm"
+            >
+              Novo lead
+            </LinkButton>
+            <LinkButton
               href="/dashboard/leads/kanban"
               variant="outline"
               size="sm"

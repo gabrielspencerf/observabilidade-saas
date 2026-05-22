@@ -7,6 +7,7 @@ import { Button, Input, Card, CardContent } from "@/components/ui";
 import { CompanyFilesSection } from "./company-files-section";
 import { AuditLogSection } from "./audit-log-section";
 import { ProfileAvatarSection } from "./profile-avatar-section";
+import { SecuritySection } from "./security-section";
 import { Settings, Smartphone } from "lucide-react";
 
 interface ProfilePayload {
@@ -408,6 +409,7 @@ export default function DashboardSettingsPage() {
         </CardContent>
       </Card>
 
+      <SecuritySection />
       <CompanyFilesSection />
       <AuditLogSection />
     </PageSection>

@@ -7,6 +7,7 @@ import {
   listUsers,
 } from "@/server/admin";
 import { AddMembershipForm } from "./add-membership-form";
+import { MembershipRoleControls } from "../../memberships-row-controls";
 import { PageSection } from "@/components/layout/page-section";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
@@ -32,7 +33,7 @@ export default async function AdminTenantDetailPage({
       <PageSection variant="plain" className="px-1 py-0 sm:px-2 md:px-2 md:pt-0 md:pb-0">
         <div className="mb-6">
           <Link
-            href="/admin/tenants"
+            href="/superadmin/tenants"
             className="text-sm text-brand-muted hover:text-brand-text transition-colors"
           >
             ← Voltar
@@ -52,7 +53,7 @@ export default async function AdminTenantDetailPage({
               {tenant.isActive ? "Ativo" : "Inativo"}
             </span>
           </div>
-          <Link href={`/admin/tenants/${id}/edit`}>
+          <Link href={`/superadmin/tenants/${id}/edit`}>
             <Button variant="secondary">Editar</Button>
           </Link>
         </div>
@@ -79,25 +80,28 @@ export default async function AdminTenantDetailPage({
         ) : (
           <div className="space-y-3">
             <div className="hidden md:block">
-              <ListTableHeader className="grid grid-cols-2 gap-4">
+              <ListTableHeader className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4">
                 <div>Usuário</div>
-                <div>Role</div>
+                <div>Role / ações</div>
               </ListTableHeader>
             </div>
             {members.map((m) => (
-              <ListRowCard key={m.id} className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+              <ListRowCard key={m.id} className="grid grid-cols-1 md:grid-cols-[1fr_auto] gap-4 items-center">
                 <div>
                   <Link
-                    href={`/admin/users/${m.userId}`}
+                    href={`/superadmin/users/${m.userId}`}
                     className="font-medium text-brand-text hover:text-brand-neon transition-colors"
                   >
                     {m.userName ?? m.userEmail}
                   </Link>
                   <span className="ml-2 text-xs text-brand-muted font-mono">({m.userEmail})</span>
                 </div>
-                <div className="text-sm font-mono text-brand-muted">
-                  {m.roleSlug}
-                </div>
+                <MembershipRoleControls
+                  membershipId={m.id}
+                  currentRoleSlug={m.roleSlug}
+                  roles={rolesList}
+                  userLabel={m.userName ?? m.userEmail}
+                />
               </ListRowCard>
             ))}
           </div>

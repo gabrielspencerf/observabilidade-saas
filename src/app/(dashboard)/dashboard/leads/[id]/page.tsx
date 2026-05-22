@@ -7,6 +7,7 @@ import {
 import { PageSection } from "@/components/layout";
 import { ListTableHeader, ListRowCard } from "@/components/layout";
 import { LeadAiSuggestionCard } from "@/components/dashboard/lead-ai-suggestion-card";
+import { ResourceDeleteButton } from "@/components/dashboard/resource-delete-button";
 import { formatDateTime as formatDate } from "@/lib/i18n/date";
 
 export default async function DashboardLeadDetailPage({
@@ -36,6 +37,13 @@ export default async function DashboardLeadDetailPage({
           >
             Editar informações
           </Link>
+          <span className="ml-auto">
+            <ResourceDeleteButton
+              endpoint={`/api/dashboard/leads/${lead.id}`}
+              redirectTo="/dashboard/leads"
+              label="Excluir lead"
+            />
+          </span>
         </div>
 
         <h1 className="text-2xl font-bold text-brand-text mb-6">

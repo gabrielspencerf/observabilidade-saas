@@ -6,6 +6,7 @@ import {
 import { PageSection, ListTableHeader, ListRowCard } from "@/components/layout";
 import { DashboardPageHeader } from "@/components/layout";
 import { EmptyState } from "@/components/ui/empty-state";
+import { LinkButton } from "@/components/ui";
 import { TrendingUp } from "lucide-react";
 import { formatDateTime } from "@/lib/i18n/date";
 
@@ -39,6 +40,14 @@ export default async function DashboardOpportunitiesPage() {
         description="Pipeline comercial com estágio, valor e evolução dos negócios."
         icon={TrendingUp}
         badges={[`${opportunities.length} itens`]}
+        actions={
+          <LinkButton
+            href="/dashboard/opportunities/new"
+            size="sm"
+          >
+            Nova oportunidade
+          </LinkButton>
+        }
       />
 
       {opportunities.length === 0 ? (

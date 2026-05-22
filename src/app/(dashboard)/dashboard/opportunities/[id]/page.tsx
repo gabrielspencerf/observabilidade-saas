@@ -5,6 +5,7 @@ import {
 } from "@/server/dashboard";
 import { PageSection } from "@/components/layout";
 import { OpportunityEditForm } from "./opportunity-edit-form";
+import { ResourceDeleteButton } from "@/components/dashboard/resource-delete-button";
 import Link from "next/link";
 
 export default async function DashboardOpportunityDetailPage({
@@ -26,6 +27,13 @@ export default async function DashboardOpportunityDetailPage({
         >
           ← Voltar para Oportunidades
         </Link>
+        <span className="ml-auto">
+          <ResourceDeleteButton
+            endpoint={`/api/dashboard/opportunities/${opportunity.id}`}
+            redirectTo="/dashboard/opportunities"
+            label="Excluir oportunidade"
+          />
+        </span>
       </div>
 
       <h1 className="text-2xl font-bold text-brand-text mb-4">
