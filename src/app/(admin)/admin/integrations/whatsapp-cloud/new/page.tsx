@@ -4,6 +4,7 @@ import { useState, useEffect } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
+import { adminGet, adminPost } from "@/features/shared/api/admin-api-client";
 
 type Tenant = { id: string; name: string; slug: string };
 
@@ -32,50 +33,44 @@ export default function NewWhatsappCloudNumberPage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/admin/tenants", { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : { tenants: [] }))
-      .then((data: { tenants?: Tenant[] }) => setTenants(data.tenants ?? []))
-      .catch((err) => {
-        if (err?.name !== "AbortError") setTenants([]);
-      });
-    return () => controller.abort();
+    let cancelled = false;
+    adminGet<{ tenants?: Tenant[] }>("/api/admin/tenants").then((result) => {
+      if (cancelled) return;
+      setTenants(result.data?.tenants ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/integrations/whatsapp-cloud", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          phone_number_id: phoneNumberId.trim(),
-          waba_id: wabaId.trim(),
-          display_phone: displayPhone.trim() || undefined,
-          label: label.trim() || undefined,
-          access_token: accessToken.trim() || undefined,
-          webhook_verify_token: webhookVerifyToken.trim() || undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao criar número");
-        return;
+    const result = await adminPost<{ id: string; webhook_url?: string }>(
+      "/api/admin/integrations/whatsapp-cloud",
+      {
+        tenant_id: tenantId,
+        phone_number_id: phoneNumberId.trim(),
+        waba_id: wabaId.trim(),
+        display_phone: displayPhone.trim() || undefined,
+        label: label.trim() || undefined,
+        access_token: accessToken.trim() || undefined,
+        webhook_verify_token: webhookVerifyToken.trim() || undefined,
       }
-      setCreated({
-        id: data.id,
-        webhook_url: data.webhook_url ?? "",
-        verify_token: webhookVerifyToken.trim(),
-      });
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
+    );
+    if (result.error) {
+      setError(result.error.message);
       setSubmitting(false);
+      return;
     }
+    setCreated({
+      id: result.data!.id,
+      webhook_url: result.data!.webhook_url ?? "",
+      verify_token: webhookVerifyToken.trim(),
+    });
+    router.refresh();
+    setSubmitting(false);
   }
 
   if (created) {

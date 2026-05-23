@@ -3,6 +3,7 @@
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
+import { adminDelete, adminPatch } from "@/features/shared/api/admin-api-client";
 
 export interface MembershipRoleOption {
   id: string;
@@ -40,44 +41,28 @@ export function MembershipRoleControls({
     setError(null);
     setRoleSlug(next);
     startTransition(async () => {
-      try {
-        const res = await fetch(`/api/admin/memberships/${membershipId}`, {
-          method: "PATCH",
-          headers: { "Content-Type": "application/json" },
-          body: JSON.stringify({ role_slug: next }),
-        });
-        const data = await res.json().catch(() => ({}));
-        if (!res.ok) {
-          setError(data.error ?? "Erro ao trocar role");
-          setRoleSlug(currentRoleSlug);
-          return;
-        }
-        router.refresh();
-      } catch {
-        setError("Erro de conexão");
+      const result = await adminPatch(`/api/admin/memberships/${membershipId}`, {
+        role_slug: next,
+      });
+      if (result.error) {
+        setError(result.error.message);
         setRoleSlug(currentRoleSlug);
+        return;
       }
+      router.refresh();
     });
   }
 
   async function handleDelete() {
     setError(null);
     setDeleting(true);
-    try {
-      const res = await fetch(`/api/admin/memberships/${membershipId}`, {
-        method: "DELETE",
-      });
-      if (!res.ok) {
-        const data = await res.json().catch(() => ({}));
-        setError(data.error ?? "Erro ao remover");
-        setDeleting(false);
-        return;
-      }
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
+    const result = await adminDelete(`/api/admin/memberships/${membershipId}`);
+    if (result.error) {
+      setError(result.error.message);
       setDeleting(false);
+      return;
     }
+    router.refresh();
   }
 
   return (

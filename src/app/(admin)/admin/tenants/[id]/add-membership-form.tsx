@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import type { RoleOption } from "@/server/admin/roles";
 import type { UserRow } from "@/server/admin/users";
 import { Button } from "@/components/ui/button";
+import { adminPost } from "@/features/shared/api/admin-api-client";
 
 interface AddMembershipFormProps {
   tenantId: string;
@@ -37,29 +38,20 @@ export function AddMembershipForm({
       return;
     }
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/memberships", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          user_id: userId,
-          tenant_id: tenantId,
-          role_slug: roleSlug,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao vincular");
-        return;
-      }
-      setUserId("");
-      setRoleSlug("");
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
+    const result = await adminPost("/api/admin/memberships", {
+      user_id: userId,
+      tenant_id: tenantId,
+      role_slug: roleSlug,
+    });
+    if (result.error) {
+      setError(result.error.message);
       setSubmitting(false);
+      return;
     }
+    setUserId("");
+    setRoleSlug("");
+    router.refresh();
+    setSubmitting(false);
   }
 
   if (availableUsers.length === 0) {

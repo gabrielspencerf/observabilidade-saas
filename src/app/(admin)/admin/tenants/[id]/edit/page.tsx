@@ -5,6 +5,7 @@ import { useRouter, useParams } from "next/navigation";
 import Link from "next/link";
 import { PageSection } from "@/components/layout/page-section";
 import { Input, Button, Card, CardContent } from "@/components/ui";
+import { adminGet, adminPatch } from "@/features/shared/api/admin-api-client";
 
 interface TenantData {
   id: string;
@@ -47,29 +48,16 @@ export default function EditTenantPage() {
     if (!id) return;
     const controller = new AbortController();
     async function load() {
-      let res: Response;
-      try {
-        res = await fetch(`/api/admin/tenants/${id}`, {
-          method: "GET",
-          signal: controller.signal,
-        });
-      } catch (err) {
-        // AbortError ao trocar id é benigno; outros erros derrubam o load.
-        if ((err as { name?: string })?.name !== "AbortError") {
-          setLoading(false);
+      const result = await adminGet<TenantData>(`/api/admin/tenants/${id}`);
+      if (controller.signal.aborted) return;
+      if (result.error) {
+        if (result.status === 404) {
+          setTenant(null);
         }
-        return;
-      }
-      if (res.status === 404) {
-        setTenant(null);
         setLoading(false);
         return;
       }
-      if (!res.ok) {
-        setLoading(false);
-        return;
-      }
-      const data = await res.json();
+      const data = result.data!;
       setTenant(data);
       setName(data.name ?? "");
       setSlug(data.slug ?? "");
@@ -164,19 +152,14 @@ export default function EditTenantPage() {
         auditScopes: auditEnabled ? auditScopes : [],
       };
 
-      const res = await fetch(`/api/admin/tenants/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          slug: slug.trim(),
-          is_active: isActive,
-          settings: nextSettings,
-        }),
+      const result = await adminPatch(`/api/admin/tenants/${id}`, {
+        name: name.trim(),
+        slug: slug.trim(),
+        is_active: isActive,
+        settings: nextSettings,
       });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao atualizar");
+      if (result.error) {
+        setError(result.error.message);
         return;
       }
       router.push(`/superadmin/tenants/${id}`);

@@ -1,31 +1,26 @@
 /**
  * POST /api/admin/memberships — vincular usuário a tenant com role (super_admin).
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { createMembership } from "@/server/admin/memberships";
 import { recordTenantActivity } from "@/server/tenancy/tenant-activity";
+import { adminApiAuthErrorResponse } from "@/server/admin/api-route-errors";
+import { apiError, apiOk } from "@/server/http/api-contract";
 
 export async function POST(request: NextRequest) {
   let session;
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return adminApiAuthErrorResponse(err);
   }
 
   let body: { user_id?: string; tenant_id?: string; role_slug?: string };
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Corpo inválido" },
-      { status: 400 }
-    );
+    return apiError("invalid_body", "Corpo inválido", { status: 400 });
   }
 
   const userId = typeof body.user_id === "string" ? body.user_id.trim() : "";
@@ -33,8 +28,9 @@ export async function POST(request: NextRequest) {
   const roleSlug = typeof body.role_slug === "string" ? body.role_slug.trim() : "";
 
   if (!userId || !tenantId || !roleSlug) {
-    return NextResponse.json(
-      { error: "user_id, tenant_id e role_slug são obrigatórios" },
+    return apiError(
+      "invalid_payload",
+      "user_id, tenant_id e role_slug são obrigatórios",
       { status: 400 }
     );
   }
@@ -47,13 +43,10 @@ export async function POST(request: NextRequest) {
   });
 
   if ("error" in result) {
-    const status =
-      result.error === "Este usuário já possui membership neste tenant"
-        ? 409
-        : result.error === "Role não encontrada"
-          ? 400
-          : 400;
-    return NextResponse.json({ error: result.error }, { status });
+    if (result.error === "Este usuário já possui membership neste tenant") {
+      return apiError("duplicate_resource", result.error, { status: 409 });
+    }
+    return apiError("invalid_payload", result.error, { status: 400 });
   }
   await recordTenantActivity({
     tenantId,
@@ -74,5 +67,5 @@ export async function POST(request: NextRequest) {
       membershipId: result.id,
     },
   });
-  return NextResponse.json({ id: result.id }, { status: 201 });
+  return apiOk({ id: result.id }, { status: 201 });
 }

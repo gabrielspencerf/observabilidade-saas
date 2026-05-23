@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui";
+import { adminGet, adminPatch } from "@/features/shared/api/admin-api-client";
 
 type ChatwootResponse = {
   id: string;
@@ -33,73 +34,54 @@ export default function EditChatwootAccountPage() {
 
   useEffect(() => {
     if (!id) return;
-    const controller = new AbortController();
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/admin/integrations/chatwoot/${id}`, {
-          method: "GET",
-          signal: controller.signal,
-        });
-        const data = (await res.json().catch(() => ({}))) as Partial<
-          ChatwootResponse
-        > & { error?: string };
-        if (!res.ok) {
-          setError(data.error ?? "Erro ao carregar conta");
-          setLoading(false);
-          return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    adminGet<ChatwootResponse>(`/api/admin/integrations/chatwoot/${id}`).then(
+      (result) => {
+        if (cancelled) return;
+        if (result.error) {
+          setError(result.error.message);
+        } else {
+          const data = result.data!;
+          setExternalId(data.externalId ?? "");
+          setBaseUrl(data.baseUrl ?? "");
+          setInboxId(data.inboxId ?? "");
+          setLabel(data.label ?? "");
+          setHasApiToken(Boolean(data.hasApiToken));
         }
-        setExternalId(data.externalId ?? "");
-        setBaseUrl(data.baseUrl ?? "");
-        setInboxId(data.inboxId ?? "");
-        setLabel(data.label ?? "");
-        setHasApiToken(Boolean(data.hasApiToken));
         setLoading(false);
-      } catch (err) {
-        if ((err as { name?: string })?.name !== "AbortError") {
-          setError("Erro de conexão");
-          setLoading(false);
-        }
       }
-    }
-    load();
-    return () => controller.abort();
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
-    try {
-      const body: Record<string, unknown> = {
-        external_id: externalId.trim(),
-        base_url: baseUrl.trim(),
-        inbox_id: inboxId.trim() || null,
-        label: label.trim() || null,
-      };
-      if (clearApiToken) {
-        body.api_token = "";
-      } else if (apiToken.trim()) {
-        body.api_token = apiToken.trim();
-      }
-      const res = await fetch(`/api/admin/integrations/chatwoot/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao atualizar conta");
-        return;
-      }
-      router.push("/superadmin/integrations");
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
-      setSubmitting(false);
+    const body: Record<string, unknown> = {
+      external_id: externalId.trim(),
+      base_url: baseUrl.trim(),
+      inbox_id: inboxId.trim() || null,
+      label: label.trim() || null,
+    };
+    if (clearApiToken) {
+      body.api_token = "";
+    } else if (apiToken.trim()) {
+      body.api_token = apiToken.trim();
     }
+    const result = await adminPatch(`/api/admin/integrations/chatwoot/${id}`, body);
+    if (result.error) {
+      setError(result.error.message);
+      setSubmitting(false);
+      return;
+    }
+    router.push("/superadmin/integrations");
+    router.refresh();
+    setSubmitting(false);
   }
 
   return (

@@ -2,9 +2,11 @@
  * GET /api/admin/tenants/[id] — obter tenant (super_admin).
  * PATCH /api/admin/tenants/[id] — atualizar tenant (super_admin).
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { getTenantById, updateTenant } from "@/server/admin/tenants";
+import { adminApiAuthErrorResponse } from "@/server/admin/api-route-errors";
+import { apiError, apiOk } from "@/server/http/api-contract";
 
 export async function GET(
   request: NextRequest,
@@ -13,52 +15,38 @@ export async function GET(
   try {
     await requireAdmin(request);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return adminApiAuthErrorResponse(err);
   }
 
   const { id } = await params;
   if (!id) {
-    return NextResponse.json(
-      { error: "ID do tenant é obrigatório" },
-      { status: 400 }
-    );
+    return apiError("resource_required", "ID do tenant é obrigatório", {
+      status: 400,
+    });
   }
 
   const tenant = await getTenantById(id);
   if (!tenant) {
-    return NextResponse.json(
-      { error: "Tenant não encontrado" },
-      { status: 404 }
-    );
+    return apiError("tenant_not_found", "Tenant não encontrado", { status: 404 });
   }
-  return NextResponse.json(tenant);
+  return apiOk(tenant);
 }
 
 export async function PATCH(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
-  let session;
   try {
-    session = await requireAdmin(request);
+    await requireAdmin(request);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return adminApiAuthErrorResponse(err);
   }
 
   const { id } = await params;
   if (!id) {
-    return NextResponse.json(
-      { error: "ID do tenant é obrigatório" },
-      { status: 400 }
-    );
+    return apiError("resource_required", "ID do tenant é obrigatório", {
+      status: 400,
+    });
   }
 
   let body: {
@@ -70,10 +58,7 @@ export async function PATCH(
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json(
-      { error: "Corpo inválido" },
-      { status: 400 }
-    );
+    return apiError("invalid_body", "Corpo inválido", { status: 400 });
   }
 
   const result = await updateTenant(id, {
@@ -85,13 +70,15 @@ export async function PATCH(
 
   if ("error" in result) {
     if (result.error === "Tenant não encontrado") {
-      return NextResponse.json({ error: result.error }, { status: 404 });
+      return apiError("tenant_not_found", result.error, { status: 404 });
     }
-    const status =
-      result.error.includes("obrigatório") || result.error.includes("longo")
-        ? 400
-        : 409;
-    return NextResponse.json({ error: result.error }, { status });
+    const isValidation =
+      result.error.includes("obrigatório") || result.error.includes("longo");
+    return apiError(
+      isValidation ? "invalid_payload" : "duplicate_resource",
+      result.error,
+      { status: isValidation ? 400 : 409 }
+    );
   }
-  return NextResponse.json({ ok: true });
+  return apiOk({ ok: true });
 }

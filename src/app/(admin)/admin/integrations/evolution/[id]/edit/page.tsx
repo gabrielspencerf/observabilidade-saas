@@ -5,6 +5,7 @@ import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui";
 import { ProviderBrandIcon } from "@/components/provider-brand-icon";
+import { adminGet, adminPatch } from "@/features/shared/api/admin-api-client";
 
 type EvolutionInstanceResponse = {
   id: string;
@@ -29,66 +30,46 @@ export default function EditEvolutionInstancePage() {
 
   useEffect(() => {
     if (!id) return;
-    const controller = new AbortController();
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/admin/integrations/evolution/${id}`, {
-          method: "GET",
-          signal: controller.signal,
-        });
-        const data = (await res.json().catch(() => ({}))) as Partial<EvolutionInstanceResponse> & {
-          error?: string;
-        };
-        if (!res.ok) {
-          setError(data.error ?? "Erro ao carregar instância");
-          setLoading(false);
-          return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    adminGet<EvolutionInstanceResponse>(`/api/admin/integrations/evolution/${id}`).then(
+      (result) => {
+        if (cancelled) return;
+        if (result.error) {
+          setError(result.error.message);
+        } else {
+          const data = result.data!;
+          setExternalId(data.externalId ?? "");
+          setBaseUrl(data.baseUrl ?? "");
+          setInstanceName(data.instanceName ?? "");
         }
-        setExternalId(data.externalId ?? "");
-        setBaseUrl(data.baseUrl ?? "");
-        setInstanceName(data.instanceName ?? "");
         setLoading(false);
-      } catch (err) {
-        // Race ao trocar id: AbortError é benigno; outros viram erro visível.
-        if ((err as { name?: string })?.name !== "AbortError") {
-          setError("Erro de conexão");
-          setLoading(false);
-        }
       }
-    }
-    load();
-    return () => controller.abort();
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
-    try {
-      const res = await fetch(`/api/admin/integrations/evolution/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          external_id: externalId.trim(),
-          base_url: baseUrl.trim(),
-          instance_name: instanceName.trim() || undefined,
-          api_key: apiKey.trim() || undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao atualizar instância");
-        return;
-      }
-      router.push("/superadmin/integrations");
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
+    const result = await adminPatch(`/api/admin/integrations/evolution/${id}`, {
+      external_id: externalId.trim(),
+      base_url: baseUrl.trim(),
+      instance_name: instanceName.trim() || undefined,
+      api_key: apiKey.trim() || undefined,
+    });
+    if (result.error) {
+      setError(result.error.message);
       setSubmitting(false);
+      return;
     }
+    router.push("/superadmin/integrations");
+    router.refresh();
+    setSubmitting(false);
   }
 
   return (

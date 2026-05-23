@@ -5,6 +5,7 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { PageSection } from "@/components/layout/page-section";
 import { Input, Button } from "@/components/ui";
+import { adminPost } from "@/features/shared/api/admin-api-client";
 
 export default function NewTenantPage() {
   const router = useRouter();
@@ -37,34 +38,25 @@ export default function NewTenantPage() {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/tenants", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          name: name.trim(),
-          slug: slug.trim(),
-          settings: {
-            features: {
-              notificationsEnabled,
-              auditEnabled,
-              auditScopes: auditEnabled ? auditScopes : [],
-            },
-          },
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao criar tenant");
-        return;
-      }
-      router.push("/superadmin/tenants");
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
+    const result = await adminPost("/api/admin/tenants", {
+      name: name.trim(),
+      slug: slug.trim(),
+      settings: {
+        features: {
+          notificationsEnabled,
+          auditEnabled,
+          auditScopes: auditEnabled ? auditScopes : [],
+        },
+      },
+    });
+    if (result.error) {
+      setError(result.error.message);
       setSubmitting(false);
+      return;
     }
+    router.push("/superadmin/tenants");
+    router.refresh();
+    setSubmitting(false);
   }
 
   return (

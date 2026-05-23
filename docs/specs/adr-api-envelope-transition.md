@@ -16,17 +16,17 @@ genéricas vs. envelope padronizado)
 - Para webhooks: `x-webhook-contract-version`, `x-webhook-idempotency-key`,
   `x-webhook-replay-window-seconds`.
 
-Hoje, **cobertura ≈ 9%** (snapshot 2026-05):
+Cobertura atual (snapshot 2026-05, pós-lote admin):
 
 | Área | Total rotas | Migradas | Status |
 |---|---|---|---|
-| Webhooks | 5 | 5 | ✅ 100% |
-| Dashboard | 37 | 2 | ⚠️ 5% |
-| Admin | 17 | 0 | ❌ 0% |
-| Auth | 7 | 0 | ❌ 0% |
+| Webhooks | 7 | 7 | ✅ 100% (inclui Chatwoot e WhatsApp Cloud) |
+| Dashboard | 40 | 2 | ⚠️ 5% — pendente lote dedicado (consumers acoplados via raw fetch) |
+| Admin | 22 | 15 | ✅ 68% — core (tenants/users/memberships) + integrations CRUD migrados |
+| Auth | 7 | 0 | ❌ 0% (deferido conforme estratégia) |
 | Context | 3 | 0 | ❌ 0% |
 | Integrations (ads OAuth/sync) | 8 | 0 | ❌ 0% |
-| Health / Metrics | 3 | 0 | ❌ 0% |
+| Health / Metrics | 3 | 0 | ❌ 0% (out of scope) |
 
 Rotas legadas retornam `NextResponse.json({ error: "..." }, { status: 4xx })`
 ou variantes ad-hoc. Cada cliente trata o erro de forma diferente.

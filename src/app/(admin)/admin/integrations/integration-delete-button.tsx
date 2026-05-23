@@ -4,6 +4,7 @@ import { useState } from "react";
 import { useRouter } from "next/navigation";
 import { Trash2 } from "lucide-react";
 import { Button } from "@/components/ui";
+import { adminDelete } from "@/features/shared/api/admin-api-client";
 
 type Provider =
   | "evolution"
@@ -50,18 +51,14 @@ export function IntegrationDeleteButton({
       return;
     }
     setLoading(true);
-    try {
-      const res = await fetch(path, { method: "DELETE" });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        alert(data.error ?? "Erro ao excluir");
-        return;
-      }
-      alert(`${providerLabel} excluída com sucesso.`);
-      router.refresh();
-    } finally {
-      setLoading(false);
+    const result = await adminDelete(path);
+    setLoading(false);
+    if (result.error) {
+      alert(result.error.message);
+      return;
     }
+    alert(`${providerLabel} excluída com sucesso.`);
+    router.refresh();
   }
 
   return (

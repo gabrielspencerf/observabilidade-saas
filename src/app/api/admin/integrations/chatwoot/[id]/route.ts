@@ -5,21 +5,15 @@
  *   - api_token: string vazia remove; ausente mantém.
  * DELETE /api/admin/integrations/chatwoot/[id] — exclui a conta.
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { deleteChatwootAccount } from "@/server/admin/integrations-delete";
 import {
   getChatwootAccountById,
   updateChatwootAccountById,
 } from "@/server/admin/integrations-update";
-
-function adminErrorResponse(err: unknown): NextResponse {
-  const e = err as Error & { status?: number };
-  return NextResponse.json(
-    { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-    { status: e.status ?? 401 }
-  );
-}
+import { adminApiAuthErrorResponse } from "@/server/admin/api-route-errors";
+import { apiError, apiOk } from "@/server/http/api-contract";
 
 export async function GET(
   request: NextRequest,
@@ -28,17 +22,17 @@ export async function GET(
   try {
     await requireAdmin(request);
   } catch (err) {
-    return adminErrorResponse(err);
+    return adminApiAuthErrorResponse(err);
   }
   const { id } = await params;
   if (!id?.trim()) {
-    return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+    return apiError("resource_required", "ID obrigatório", { status: 400 });
   }
   const result = await getChatwootAccountById(id.trim());
   if ("error" in result) {
-    return NextResponse.json({ error: "Conta não encontrada" }, { status: 404 });
+    return apiError("not_found", "Conta não encontrada", { status: 404 });
   }
-  return NextResponse.json(result);
+  return apiOk(result);
 }
 
 export async function PATCH(
@@ -49,17 +43,17 @@ export async function PATCH(
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    return adminErrorResponse(err);
+    return adminApiAuthErrorResponse(err);
   }
   const { id } = await params;
   if (!id?.trim()) {
-    return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+    return apiError("resource_required", "ID obrigatório", { status: 400 });
   }
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+    return apiError("invalid_body", "Corpo inválido", { status: 400 });
   }
   const result = await updateChatwootAccountById({
     id: id.trim(),
@@ -88,14 +82,15 @@ export async function PATCH(
   });
   if ("error" in result) {
     if (result.error === "not_found") {
-      return NextResponse.json({ error: "Conta não encontrada" }, { status: 404 });
+      return apiError("not_found", "Conta não encontrada", { status: 404 });
     }
-    return NextResponse.json(
-      { error: "Já existe uma conta Chatwoot com este external_id no tenant" },
+    return apiError(
+      "duplicate_resource",
+      "Já existe uma conta Chatwoot com este external_id no tenant",
       { status: 409 }
     );
   }
-  return NextResponse.json(result);
+  return apiOk(result);
 }
 
 export async function DELETE(
@@ -106,18 +101,18 @@ export async function DELETE(
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    return adminErrorResponse(err);
+    return adminApiAuthErrorResponse(err);
   }
   const { id } = await params;
   if (!id?.trim()) {
-    return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+    return apiError("resource_required", "ID obrigatório", { status: 400 });
   }
   const result = await deleteChatwootAccount(id.trim(), session.user.id);
   if ("error" in result) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.error.includes("não encontrada") ? 404 : 500 }
-    );
+    const notFound = result.error.includes("não encontrada");
+    return apiError(notFound ? "not_found" : "internal_error", result.error, {
+      status: notFound ? 404 : 500,
+    });
   }
-  return NextResponse.json({ ok: true });
+  return apiOk({ ok: true });
 }

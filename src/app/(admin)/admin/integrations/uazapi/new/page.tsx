@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 import { validateUazapiCredential } from "@/lib/uazapi-credentials";
 import { ProviderBrandIcon } from "@/components/provider-brand-icon";
+import { adminGet, adminPost } from "@/features/shared/api/admin-api-client";
 
 type Tenant = { id: string; name: string; slug: string };
 
@@ -30,14 +31,14 @@ export default function NewUazapiInstancePage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/admin/tenants", { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : { tenants: [] }))
-      .then((data: { tenants?: Tenant[] }) => setTenants(data.tenants ?? []))
-      .catch((err) => {
-        if (err?.name !== "AbortError") setTenants([]);
-      });
-    return () => controller.abort();
+    let cancelled = false;
+    adminGet<{ tenants?: Tenant[] }>("/api/admin/tenants").then((result) => {
+      if (cancelled) return;
+      setTenants(result.data?.tenants ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
@@ -53,32 +54,26 @@ export default function NewUazapiInstancePage() {
     }
     setError(null);
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/integrations/uazapi", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          external_id: externalId.trim(),
-          base_url: baseUrl.trim(),
-          api_key: apiKey.trim() || undefined,
-          token: token.trim() || undefined,
-          admin_token: adminToken.trim() || undefined,
-          instance_name: instanceName.trim() || undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao criar instância UAZAPI");
-        return;
+    const result = await adminPost<{ id: string }>(
+      "/api/admin/integrations/uazapi",
+      {
+        tenant_id: tenantId,
+        external_id: externalId.trim(),
+        base_url: baseUrl.trim(),
+        api_key: apiKey.trim() || undefined,
+        token: token.trim() || undefined,
+        admin_token: adminToken.trim() || undefined,
+        instance_name: instanceName.trim() || undefined,
       }
-      setCreated({ id: data.id });
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
+    );
+    if (result.error) {
+      setError(result.error.message);
       setSubmitting(false);
+      return;
     }
+    setCreated({ id: result.data!.id });
+    router.refresh();
+    setSubmitting(false);
   }
 
   if (created) {

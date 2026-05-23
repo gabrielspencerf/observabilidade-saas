@@ -3,6 +3,7 @@
 import { useState } from "react";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
+import { adminGet } from "@/features/shared/api/admin-api-client";
 
 interface BotOption {
   id: string;
@@ -10,10 +11,11 @@ interface BotOption {
 }
 
 async function fetchBots(): Promise<BotOption[]> {
-  const res = await fetch("/api/admin/integrations/typebot", { cache: "no-store" });
-  if (!res.ok) return [];
-  const data = (await res.json()) as { bots?: Array<{ id: string; name?: string; externalId?: string }> };
-  return (data.bots ?? []).map((bot) => ({
+  const result = await adminGet<{
+    bots?: Array<{ id: string; name?: string; externalId?: string }>;
+  }>("/api/admin/integrations/typebot");
+  if (result.error) return [];
+  return (result.data?.bots ?? []).map((bot) => ({
     id: bot.id,
     name: bot.name ?? bot.externalId ?? bot.id,
   }));

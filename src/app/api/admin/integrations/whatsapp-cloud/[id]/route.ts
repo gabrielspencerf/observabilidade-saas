@@ -5,21 +5,15 @@
  *   - access_token: string vazia remove; ausente mantém.
  * DELETE /api/admin/integrations/whatsapp-cloud/[id] — exclui o número.
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import { deleteWhatsappCloudNumber } from "@/server/admin/integrations-delete";
 import {
   getWhatsappCloudNumberById,
   updateWhatsappCloudNumberById,
 } from "@/server/admin/integrations-update";
-
-function adminErrorResponse(err: unknown): NextResponse {
-  const e = err as Error & { status?: number };
-  return NextResponse.json(
-    { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-    { status: e.status ?? 401 }
-  );
-}
+import { adminApiAuthErrorResponse } from "@/server/admin/api-route-errors";
+import { apiError, apiOk } from "@/server/http/api-contract";
 
 export async function GET(
   request: NextRequest,
@@ -28,17 +22,17 @@ export async function GET(
   try {
     await requireAdmin(request);
   } catch (err) {
-    return adminErrorResponse(err);
+    return adminApiAuthErrorResponse(err);
   }
   const { id } = await params;
   if (!id?.trim()) {
-    return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+    return apiError("resource_required", "ID obrigatório", { status: 400 });
   }
   const result = await getWhatsappCloudNumberById(id.trim());
   if ("error" in result) {
-    return NextResponse.json({ error: "Número não encontrado" }, { status: 404 });
+    return apiError("not_found", "Número não encontrado", { status: 404 });
   }
-  return NextResponse.json(result);
+  return apiOk(result);
 }
 
 export async function PATCH(
@@ -49,17 +43,17 @@ export async function PATCH(
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    return adminErrorResponse(err);
+    return adminApiAuthErrorResponse(err);
   }
   const { id } = await params;
   if (!id?.trim()) {
-    return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+    return apiError("resource_required", "ID obrigatório", { status: 400 });
   }
   let body: Record<string, unknown>;
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+    return apiError("invalid_body", "Corpo inválido", { status: 400 });
   }
   const result = await updateWhatsappCloudNumberById({
     id: id.trim(),
@@ -94,14 +88,15 @@ export async function PATCH(
   });
   if ("error" in result) {
     if (result.error === "not_found") {
-      return NextResponse.json({ error: "Número não encontrado" }, { status: 404 });
+      return apiError("not_found", "Número não encontrado", { status: 404 });
     }
-    return NextResponse.json(
-      { error: "Já existe um número WhatsApp Cloud com este phone_number_id no tenant" },
+    return apiError(
+      "duplicate_resource",
+      "Já existe um número WhatsApp Cloud com este phone_number_id no tenant",
       { status: 409 }
     );
   }
-  return NextResponse.json(result);
+  return apiOk(result);
 }
 
 export async function DELETE(
@@ -112,18 +107,18 @@ export async function DELETE(
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    return adminErrorResponse(err);
+    return adminApiAuthErrorResponse(err);
   }
   const { id } = await params;
   if (!id?.trim()) {
-    return NextResponse.json({ error: "ID obrigatório" }, { status: 400 });
+    return apiError("resource_required", "ID obrigatório", { status: 400 });
   }
   const result = await deleteWhatsappCloudNumber(id.trim(), session.user.id);
   if ("error" in result) {
-    return NextResponse.json(
-      { error: result.error },
-      { status: result.error.includes("não encontrado") ? 404 : 500 }
-    );
+    const notFound = result.error.includes("não encontrado");
+    return apiError(notFound ? "not_found" : "internal_error", result.error, {
+      status: notFound ? 404 : 500,
+    });
   }
-  return NextResponse.json({ ok: true });
+  return apiOk({ ok: true });
 }

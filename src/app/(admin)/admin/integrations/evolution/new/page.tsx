@@ -5,6 +5,7 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Button, Input } from "@/components/ui";
 import { ProviderBrandIcon } from "@/components/provider-brand-icon";
+import { adminGet, adminPost } from "@/features/shared/api/admin-api-client";
 
 type Tenant = { id: string; name: string; slug: string };
 
@@ -27,44 +28,38 @@ export default function NewEvolutionInstancePage() {
   }, [searchParams]);
 
   useEffect(() => {
-    const controller = new AbortController();
-    fetch("/api/admin/tenants", { signal: controller.signal })
-      .then((res) => (res.ok ? res.json() : { tenants: [] }))
-      .then((data: { tenants?: Tenant[] }) => setTenants(data.tenants ?? []))
-      .catch((err) => {
-        if (err?.name !== "AbortError") setTenants([]);
-      });
-    return () => controller.abort();
+    let cancelled = false;
+    adminGet<{ tenants?: Tenant[] }>("/api/admin/tenants").then((result) => {
+      if (cancelled) return;
+      setTenants(result.data?.tenants ?? []);
+    });
+    return () => {
+      cancelled = true;
+    };
   }, []);
 
   async function handleSubmit(e: React.FormEvent) {
     e.preventDefault();
     setError(null);
     setSubmitting(true);
-    try {
-      const res = await fetch("/api/admin/integrations/evolution", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          tenant_id: tenantId,
-          external_id: externalId.trim(),
-          base_url: baseUrl.trim(),
-          api_key: apiKey.trim() || undefined,
-          instance_name: instanceName.trim() || undefined,
-        }),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao criar instância");
-        return;
+    const result = await adminPost<{ id: string; webhook_url?: string }>(
+      "/api/admin/integrations/evolution",
+      {
+        tenant_id: tenantId,
+        external_id: externalId.trim(),
+        base_url: baseUrl.trim(),
+        api_key: apiKey.trim() || undefined,
+        instance_name: instanceName.trim() || undefined,
       }
-      setCreated({ id: data.id, webhook_url: data.webhook_url ?? "" });
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
+    );
+    if (result.error) {
+      setError(result.error.message);
       setSubmitting(false);
+      return;
     }
+    setCreated({ id: result.data!.id, webhook_url: result.data!.webhook_url ?? "" });
+    router.refresh();
+    setSubmitting(false);
   }
 
   if (created) {

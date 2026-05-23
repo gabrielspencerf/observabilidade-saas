@@ -4,13 +4,15 @@
  *
  * Apenas super_admin global (requireAdmin). Registra atividade no tenant.
  */
-import { NextRequest, NextResponse } from "next/server";
+import { NextRequest } from "next/server";
 import { requireAdmin } from "@/server/admin/require-admin";
 import {
   updateMembershipRole,
   deleteMembership,
 } from "@/server/admin/memberships";
 import { recordTenantActivity } from "@/server/tenancy/tenant-activity";
+import { adminApiAuthErrorResponse } from "@/server/admin/api-route-errors";
+import { apiError, apiOk } from "@/server/http/api-contract";
 
 export async function PATCH(
   request: NextRequest,
@@ -20,41 +22,31 @@ export async function PATCH(
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return adminApiAuthErrorResponse(err);
   }
 
   const { id } = await params;
   if (!id) {
-    return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
+    return apiError("resource_required", "id obrigatório", { status: 400 });
   }
 
   let body: { role_slug?: string };
   try {
     body = await request.json();
   } catch {
-    return NextResponse.json({ error: "Corpo inválido" }, { status: 400 });
+    return apiError("invalid_body", "Corpo inválido", { status: 400 });
   }
   const roleSlug = typeof body.role_slug === "string" ? body.role_slug.trim() : "";
   if (!roleSlug) {
-    return NextResponse.json(
-      { error: "role_slug é obrigatório" },
-      { status: 400 }
-    );
+    return apiError("invalid_payload", "role_slug é obrigatório", { status: 400 });
   }
 
   const result = await updateMembershipRole({ membershipId: id, roleSlug });
   if ("error" in result) {
-    const status =
-      result.error === "Membership não encontrado"
-        ? 404
-        : result.error === "Role não encontrada"
-          ? 400
-          : 400;
-    return NextResponse.json({ error: result.error }, { status });
+    if (result.error === "Membership não encontrado") {
+      return apiError("not_found", result.error, { status: 404 });
+    }
+    return apiError("invalid_payload", result.error, { status: 400 });
   }
   await recordTenantActivity({
     tenantId: result.tenantId,
@@ -68,7 +60,7 @@ export async function PATCH(
     resourceId: id,
     newValues: { roleSlug, userId: result.userId },
   });
-  return NextResponse.json({ ok: true });
+  return apiOk({ ok: true });
 }
 
 export async function DELETE(
@@ -79,22 +71,19 @@ export async function DELETE(
   try {
     session = await requireAdmin(request);
   } catch (err) {
-    const e = err as Error & { status?: number };
-    return NextResponse.json(
-      { error: e.status === 403 ? "Sem permissão" : "Não autenticado" },
-      { status: e.status ?? 401 }
-    );
+    return adminApiAuthErrorResponse(err);
   }
 
   const { id } = await params;
   if (!id) {
-    return NextResponse.json({ error: "id obrigatório" }, { status: 400 });
+    return apiError("resource_required", "id obrigatório", { status: 400 });
   }
 
   const result = await deleteMembership(id);
   if ("error" in result) {
-    return NextResponse.json(
-      { error: result.error },
+    return apiError(
+      result.error === "Membership não encontrado" ? "not_found" : "invalid_payload",
+      result.error,
       { status: result.error === "Membership não encontrado" ? 404 : 400 }
     );
   }
@@ -110,5 +99,5 @@ export async function DELETE(
     resourceId: id,
     newValues: { userId: result.userId },
   });
-  return NextResponse.json({ ok: true });
+  return apiOk({ ok: true });
 }

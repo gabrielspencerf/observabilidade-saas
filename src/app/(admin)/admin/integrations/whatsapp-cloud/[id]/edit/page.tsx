@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { Button, Input } from "@/components/ui";
+import { adminGet, adminPatch } from "@/features/shared/api/admin-api-client";
 
 type WhatsappCloudResponse = {
   id: string;
@@ -35,75 +36,59 @@ export default function EditWhatsappCloudNumberPage() {
 
   useEffect(() => {
     if (!id) return;
-    const controller = new AbortController();
-    async function load() {
-      setLoading(true);
-      setError(null);
-      try {
-        const res = await fetch(`/api/admin/integrations/whatsapp-cloud/${id}`, {
-          method: "GET",
-          signal: controller.signal,
-        });
-        const data = (await res.json().catch(() => ({}))) as Partial<
-          WhatsappCloudResponse
-        > & { error?: string };
-        if (!res.ok) {
-          setError(data.error ?? "Erro ao carregar número");
-          setLoading(false);
-          return;
+    let cancelled = false;
+    setLoading(true);
+    setError(null);
+    adminGet<WhatsappCloudResponse>(`/api/admin/integrations/whatsapp-cloud/${id}`).then(
+      (result) => {
+        if (cancelled) return;
+        if (result.error) {
+          setError(result.error.message);
+        } else {
+          const data = result.data!;
+          setPhoneNumberId(data.phoneNumberId ?? "");
+          setWabaId(data.wabaId ?? "");
+          setDisplayPhone(data.displayPhone ?? "");
+          setLabel(data.label ?? "");
+          setWebhookVerifyToken(data.webhookVerifyToken ?? "");
+          setHasAccessToken(Boolean(data.hasAccessToken));
         }
-        setPhoneNumberId(data.phoneNumberId ?? "");
-        setWabaId(data.wabaId ?? "");
-        setDisplayPhone(data.displayPhone ?? "");
-        setLabel(data.label ?? "");
-        setWebhookVerifyToken(data.webhookVerifyToken ?? "");
-        setHasAccessToken(Boolean(data.hasAccessToken));
         setLoading(false);
-      } catch (err) {
-        if ((err as { name?: string })?.name !== "AbortError") {
-          setError("Erro de conexão");
-          setLoading(false);
-        }
       }
-    }
-    load();
-    return () => controller.abort();
+    );
+    return () => {
+      cancelled = true;
+    };
   }, [id]);
 
   async function handleSubmit(event: React.FormEvent) {
     event.preventDefault();
     setError(null);
     setSubmitting(true);
-    try {
-      const body: Record<string, unknown> = {
-        phone_number_id: phoneNumberId.trim(),
-        waba_id: wabaId.trim(),
-        display_phone: displayPhone.trim() || null,
-        label: label.trim() || null,
-        webhook_verify_token: webhookVerifyToken.trim() || null,
-      };
-      if (clearAccessToken) {
-        body.access_token = "";
-      } else if (accessToken.trim()) {
-        body.access_token = accessToken.trim();
-      }
-      const res = await fetch(`/api/admin/integrations/whatsapp-cloud/${id}`, {
-        method: "PATCH",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify(body),
-      });
-      const data = await res.json().catch(() => ({}));
-      if (!res.ok) {
-        setError(data.error ?? "Erro ao atualizar número");
-        return;
-      }
-      router.push("/superadmin/integrations");
-      router.refresh();
-    } catch {
-      setError("Erro de conexão");
-    } finally {
-      setSubmitting(false);
+    const body: Record<string, unknown> = {
+      phone_number_id: phoneNumberId.trim(),
+      waba_id: wabaId.trim(),
+      display_phone: displayPhone.trim() || null,
+      label: label.trim() || null,
+      webhook_verify_token: webhookVerifyToken.trim() || null,
+    };
+    if (clearAccessToken) {
+      body.access_token = "";
+    } else if (accessToken.trim()) {
+      body.access_token = accessToken.trim();
     }
+    const result = await adminPatch(
+      `/api/admin/integrations/whatsapp-cloud/${id}`,
+      body
+    );
+    if (result.error) {
+      setError(result.error.message);
+      setSubmitting(false);
+      return;
+    }
+    router.push("/superadmin/integrations");
+    router.refresh();
+    setSubmitting(false);
   }
 
   return (
